@@ -1,8 +1,8 @@
 import { http, HttpResponse } from "msw"
 import { mockApplications } from "@/features/applications/mock-data"
-import type { Application } from "@/features/applications/types"
+import type { CandidaturaDto } from "@/features/candidaturas/types"
 
-let apps: Application[] = [...mockApplications]
+let apps: CandidaturaDto[] = [...mockApplications]
 
 function fakeExtract(url: string) {
   const u = url.toLowerCase()
@@ -20,24 +20,26 @@ export const handlers = [
   }),
 
   http.post("/api/applications", async ({ request }) => {
-    const body = (await request.json()) as Partial<Application>
-    const created: Application = {
+    const body = (await request.json()) as Partial<CandidaturaDto>
+    const now = new Date().toISOString()
+    const created: CandidaturaDto = {
       id: String(Date.now()),
       empresa: body.empresa ?? "Nova empresa",
       cargo: body.cargo ?? "Novo cargo",
       link: body.link ?? "https://example.com",
-      status: (body.status as Application["status"]) ?? "aplicado",
-      dataAplicacao: new Date().toISOString(),
-      observacoes: body.observacoes,
-      requisitos: body.requisitos ?? [],
+      status: (body.status as string) ?? "Aplicado",
+      origem: (body.origem as string) ?? "Outro",
+      observacoes: body.observacoes ?? null,
+      criadoEm: now,
+      atualizadoEm: now,
     }
     apps = [created, ...apps]
     return HttpResponse.json(created, { status: 201 })
   }),
 
   http.patch("/api/applications/:id", async ({ params, request }) => {
-    const body = (await request.json()) as Partial<Application>
-    apps = apps.map((a) => (a.id === params.id ? { ...a, ...body } : a))
+    const body = (await request.json()) as Partial<CandidaturaDto>
+    apps = apps.map((a) => (a.id === params.id ? { ...a, ...body, atualizadoEm: new Date().toISOString() } : a))
     const updated = apps.find((a) => a.id === params.id)
     return HttpResponse.json(updated)
   }),

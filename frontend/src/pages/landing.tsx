@@ -78,7 +78,7 @@ export function Landing() {
         {/* features */}
         <div className="grid sm:grid-cols-3 gap-4">
           {[
-            { icon: Kanban, title: "Kanban caderno", desc: "5 colunas: aplicado → recusado. Visual de post-its, nada de tabela chata.", color: "bg-[#dbeafe]" },
+            { icon: Kanban, title: "Kanban caderno", desc: "5 colunas: Aplicado → Encerrado. Visual de post-its, nada de tabela chata.", color: "bg-[#dbeafe]" },
             { icon: Sparkles, title: "Cole link → IA extrai", desc: "LinkedIn/Gupy/Greenhouse. Já preenche empresa, cargo e requisitos.", color: "bg-[#fef3c7]" },
             { icon: BellRing, title: "Lembrete 7 dias", desc: "Sem retorno? Aviso amarelo no card. Chega de esquecer follow-up.", color: "bg-[#fce7f3]" },
           ].map((f) => (

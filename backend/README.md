@@ -66,14 +66,18 @@ dotnet run --project src/Vagalume.Api
 
 ## Rodar com Docker (recomendado)
 ```bash
+# da raiz (compose geral com frontend):
+cp ../.env.example ../.env   # ou cp .env.example .env se estiver em backend/
+docker compose up --build
+# ou a partir de backend/:
 cp .env.example .env
-# se porta 1433 ocupada, exporte SQLSERVER_PORT=1435
 docker compose up --build
 # api: http://localhost:5000/swagger
+# frontend: http://localhost:3000 (nginx + proxy /api → api:8080)
 # sqlserver: localhost:1433 (ou 1435)
 ```
 
-`docker-compose.yml`: `sqlserver` com healthcheck `sqlcmd`, volume `sqlserver_data`, `api` depende `service_healthy`, volume `uploads_data:/app/uploads`, env `ConnectionStrings__DefaultConnection` aponta para `sqlserver:1433`.
+`docker-compose.yml`: `sqlserver` com healthcheck `sqlcmd`, volume `sqlserver_data`, `api` depende `service_healthy`, `frontend` (nginx) depende `api`, volume `uploads_data:/app/uploads`. O `docker-compose.yml` da **raiz** (`../docker-compose.yml`) é o compose geral canônico — `backend/docker-compose.yml` espelha o mesmo stack com `context: ../frontend` para rodar de dentro de `backend/`.
 
 Migrations são aplicadas no startup (`db.Database.Migrate()`).
 

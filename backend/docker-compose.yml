@@ -7,7 +7,7 @@ services:
       SA_PASSWORD: "${SA_PASSWORD:-Vagalume@123}"
       MSSQL_PID: "Developer"
     ports:
-      - "${SQLSERVER_PORT:-1433}:1433"
+      - "${SQLSERVER_PORT:-1435}:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
@@ -38,6 +38,20 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+    networks:
+      - vagalume
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "${VITE_API_URL:-}"
+    container_name: vagalume-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - api
     networks:
       - vagalume
 

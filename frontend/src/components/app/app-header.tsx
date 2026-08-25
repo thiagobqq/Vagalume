@@ -1,10 +1,12 @@
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Sparkles, LayoutDashboard, LogIn, Plus } from "lucide-react"
+import { Sparkles, LayoutDashboard, LogIn, Plus, LogOut } from "lucide-react"
+import { useAuth } from "@/features/auth/auth-context"
 
 export function AppHeader({ onAdd }: { onAdd?: () => void }) {
   const loc = useLocation()
+  const nav = useNavigate()
+  const { isAuthenticated, logout, user } = useAuth()
   const isDashboard = loc.pathname === "/app"
   return (
     <header className="sticky top-0 z-40 bg-[#fef9f0]/80 backdrop-blur-md border-b-[1.5px] border-foreground">
@@ -22,19 +24,27 @@ export function AppHeader({ onAdd }: { onAdd?: () => void }) {
         <nav className="flex items-center gap-2">
           {isDashboard ? (
             <>
-              <Badge variant="outline" className="hidden sm:inline-flex bg-white gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> 5 vagas anotadas
-              </Badge>
+              {user && <span className="hidden sm:inline text-xs text-muted-foreground">olá, <b className="text-foreground">{user.nome}</b></span>}
               <Button size="sm" onClick={onAdd} className="gap-1.5">
-                <Plus className="w-4 h-4" />{" "}
-                <span className="hidden sm:inline">Cole link da vaga</span>
-                <span className="sm:hidden">Nova</span>
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Nova candidatura</span><span className="sm:hidden">Nova</span>
               </Button>
-              <Link to="/login">
-                <Button variant="ghost" size="sm">
-                  sair
+              {isAuthenticated ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    logout()
+                    nav("/login")
+                  }}
+                >
+                  <LogOut className="w-4 h-4" /> sair
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/login">
+                  <Button variant="ghost" size="sm">entrar</Button>
+                </Link>
+              )}
             </>
           ) : (
             <>
@@ -43,16 +53,26 @@ export function AppHeader({ onAdd }: { onAdd?: () => void }) {
                   <LayoutDashboard className="w-4 h-4" /> dashboard
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <LogIn className="w-4 h-4" /> entrar
-                </Button>
-              </Link>
-              <Link to="/app">
-                <Button size="sm" className="gap-1.5">
-                  <Sparkles className="w-4 h-4" /> começar grátis
-                </Button>
-              </Link>
+              {!isAuthenticated ? (
+                <>
+                  <Link to="/login">
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <LogIn className="w-4 h-4" /> entrar
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button size="sm" className="gap-1.5">
+                      <Sparkles className="w-4 h-4" /> começar grátis
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <Link to="/app">
+                  <Button size="sm" className="gap-1.5">
+                    <LayoutDashboard className="w-4 h-4" /> ir ao caderno
+                  </Button>
+                </Link>
+              )}
             </>
           )}
         </nav>
