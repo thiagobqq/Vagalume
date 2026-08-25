@@ -1,0 +1,13 @@
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/bin/Debug/net10.0/Vagalume.Domain.deps.json
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/bin/Debug/net10.0/Vagalume.Domain.dll
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/bin/Debug/net10.0/Vagalume.Domain.pdb
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/Vagalume.Domain.csproj.AssemblyReference.cache
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/Vagalume.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/Vagalume.Domain.AssemblyInfoInputs.cache
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/Vagalume.Domain.AssemblyInfo.cs
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/Vagalume.Domain.csproj.CoreCompileInputs.cache
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/Vagalume.Domain.sourcelink.json
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/Vagalume.Domain.dll
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/refint/Vagalume.Domain.dll
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/Vagalume.Domain.pdb
+/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Domain/obj/Debug/net10.0/ref/Vagalume.Domain.dll

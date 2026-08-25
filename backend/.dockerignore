@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+out/
+*.user
+*.suo
+.vs/
+.idea/
+*.log
+.env
+.git/
+.gitignore
+frontend/
+docs/

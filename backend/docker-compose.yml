@@ -1,0 +1,50 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: vagalume-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${SA_PASSWORD:-Vagalume@123}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "${SQLSERVER_PORT:-1433}:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P ${SA_PASSWORD:-Vagalume@123} -Q 'SELECT 1' -C"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - vagalume
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Vagalume.Api/Dockerfile
+    container_name: vagalume-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Vagalume;User Id=sa;Password=${SA_PASSWORD:-Vagalume@123};TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY:-chave-super-secreta-de-32-caracteres!!-vagalume-dev}"
+      Jwt__Issuer: "${JWT_ISSUER:-vagalume}"
+      Jwt__Audience: "${JWT_AUDIENCE:-vagalume}"
+      Uploads__BasePath: "/app/uploads"
+    ports:
+      - "${API_PORT:-5000}:8080"
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - vagalume
+
+volumes:
+  sqlserver_data:
+  uploads_data:
+
+networks:
+  vagalume:
+    driver: bridge
