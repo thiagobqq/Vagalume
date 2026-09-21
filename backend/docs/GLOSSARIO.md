@@ -20,7 +20,7 @@ Termos de domínio do backend do Analista de Busca de Emprego. Definições norm
 
 **Currículo** — Arquivo PDF enviado pelo usuário (≤10MB), com metadados no banco e arquivo em volume. Um usuário tem vários; exatamente **um é o ativo**. O upload novo sempre vira o ativo. [ADR-0008]
 
-**Currículo Ativo** — O currículo que o sistema considera "o atual" do usuário; alvo das features futuras de comparação (gap-analysis). Invariante: um e apenas um ativo por usuário. [ADR-0008]
+**Currículo Ativo** — O currículo que o sistema considera "o atual" do usuário; alvo das features de comparação (gap-analysis). Invariante: um e apenas um ativo por usuário. [ADR-0008]
 
 **Fonte de Busca** — Origem de vagas configurada pelo usuário (`FonteBusca`): tipo (`Gupy, Trampos, Programathor, InfoJobs, Catho, Rss`), identificador opcional (Gupy = slug de empresa; RSS = URL do feed), nome da empresa opcional e ativo/inativo. Gupy e Trampos usam APIs públicas; Programathor/InfoJobs/Catho usam scraping HTML; RSS é genérico. [ADR-0015, ADR-0016]
 
@@ -36,13 +36,17 @@ Termos de domínio do backend do Analista de Busca de Emprego. Definições norm
 
 **Scraping** — Leitura de HTML público de portais sem API (Programathor, InfoJobs, Catho) com AngleSharp, rate-limit conservador e User-Agent de navegador (portais com WAF bloqueiam UA de bot). Provedores isolados: falha de um site não derruba a execução. [ADR-0016]
 
+**Configuração de IA (Provedor de IA)** — Dados por usuário (`ConfiguracaoIa`) para acessar um LLM no modelo **BYOK**: provedor pré-definido (enum `ProvedorIa`), modelo e API key **cifrada em repouso**. Não há provedor/chave padrão no servidor. [ADR-0020]
+
+**Análise de Compatibilidade** — Resultado do gap-analysis para uma `Vaga` e o currículo ativo: `score` (0–100), resumo, requisitos avaliados (atendido/gap) e sugestões. Persistida em `AnaliseCompatibilidade`, única por `(UsuarioId, VagaId)`; fica `desatualizada` quando o currículo ativo muda. [ADR-0019]
+
 ## Escopo e processo
 
 **Fatia 1** — Primeira entrega de ponta a ponta: auth + kanban de candidaturas + upload de currículos. Tudo fora disso (extração por URL, follow-ups, gap-analysis, prep de entrevista, métricas, pagamentos, exclusões) está explicitamente adiado. [ADR-0003]
 
 **Extração automática** — Leitura/coleta de dados de vaga sem digitação manual. Implementada como **busca automática** (ver acima): coleta em fontes configuradas e preenche a Vaga. [ADR-0014, ADR-0015]
 
-**Gap-analysis** — Feature futura (paga): comparar requisitos da candidatura com o currículo ativo, apontando lacunas específicas. Depende de parse do PDF. [ADR-0008]
+**Gap-analysis** — Feature paga implementada: comparar o **currículo ativo** com uma `Vaga` da inbox, apontando lacunas específicas e sugestões via IA. Extrai o texto do PDF e chama o provedor de IA do próprio usuário. [ADR-0019, ADR-0020]
 
 ## Técnico
 

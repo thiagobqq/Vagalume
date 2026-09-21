@@ -18,6 +18,8 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
     public DbSet<FonteBusca> FontesBusca => Set<FonteBusca>();
     public DbSet<PerfilBusca> PerfisBusca => Set<PerfilBusca>();
     public DbSet<ExecucaoBusca> ExecucoesBusca => Set<ExecucaoBusca>();
+    public DbSet<ConfiguracaoIa> ConfiguracoesIa => Set<ConfiguracaoIa>();
+    public DbSet<AnaliseCompatibilidade> AnalisesCompatibilidade => Set<AnaliseCompatibilidade>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

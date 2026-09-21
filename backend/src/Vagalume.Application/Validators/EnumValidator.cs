@@ -25,6 +25,9 @@ public static class EnumValidator
     public static bool TryParseCombina(string value, out CombinaCriterio combina)
         => Enum.TryParse<CombinaCriterio>(value, ignoreCase: false, out combina) && Enum.IsDefined(combina);
 
+    public static bool TryParseProvedorIa(string value, out ProvedorIa provedor)
+        => Enum.TryParse<ProvedorIa>(value, ignoreCase: false, out provedor) && Enum.IsDefined(provedor);
+
     public static string OrigemValores => string.Join(", ", Enum.GetNames<OrigemCandidatura>());
     public static string StatusValores => string.Join(", ", Enum.GetNames<StatusCandidatura>());
     public static string FonteTipoValores => string.Join(", ", Enum.GetNames<FonteTipo>());
@@ -32,4 +35,5 @@ public static class EnumValidator
     public static string NivelValores => string.Join(", ", Enum.GetNames<NivelVaga>());
     public static string ModalidadeValores => string.Join(", ", Enum.GetNames<ModalidadeVaga>());
     public static string CombinaValores => string.Join(", ", Enum.GetNames<CombinaCriterio>());
+    public static string ProvedorIaValores => string.Join(", ", Enum.GetNames<ProvedorIa>());
 }

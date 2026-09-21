@@ -3,8 +3,8 @@
 Monorepo com **backend .NET 10 + PostgreSQL** e **frontend React 19 + Vite + Tailwind** estilizado como caderno.
 
 ## Stack
-- **Backend** `backend/`: .NET 10, EF Core, Identity + JWT + Refresh rotativo, PostgreSQL 16, Docker, Swagger, envelope `GenericResponseData<T>`
-- **Frontend** `frontend/`: React 19, React Router 7, Vite 8, Tailwind 4, shadcn/new-york, autenticação real, kanban 5 colunas, currículos PDF
+- **Backend** `backend/`: .NET 10, EF Core, Identity + JWT + Refresh rotativo, PostgreSQL 16, Docker, Swagger, envelope `GenericResponseData<T>`, busca automática de vagas, gap-analysis com IA (BYOK)
+- **Frontend** `frontend/`: React 19, React Router 7, Vite 8, Tailwind 4, shadcn/new-york, autenticação real, kanban 5 colunas, currículos PDF, busca de vagas e análise de compatibilidade
 - **Infra**: Docker Compose com 3 serviços (postgres + api + frontend via nginx proxy)
 
 ## Rodar tudo com Docker (recomendado — compose geral)
@@ -39,6 +39,8 @@ API_PORT=5000
 FRONTEND_PORT=3000
 JWT_KEY=chave-super-secreta-de-32-caracteres!!-vagalume-dev
 VITE_API_URL=   # vazio = usa proxy /api (recomendado no docker)
+SEGURANCA_CHAVE_CRIPTO=troque-este-segredo-em-producao  # cifra a API key de IA (BYOK)
+IA_PRESETS_OLLAMA_BASE_URL=   # opcional: habilita provedor Ollama local
 ```
 
 ## Rodar em dev sem Docker
@@ -71,6 +73,8 @@ Vagalume/
     ├── src/lib/api.ts      # client envelope + refresh
     ├── src/features/auth/  # login/register/context
     ├── src/features/candidaturas/ # tipos e API (status Origem do backend)
+    ├── src/features/vagas/ # busca de vagas + análise de compatibilidade
+    ├── src/features/ia/    # configuração do provedor de IA (BYOK)
     ├── Dockerfile          # node build → nginx
     └── nginx.conf          # SPA fallback + proxy /api → api:8080
 ```

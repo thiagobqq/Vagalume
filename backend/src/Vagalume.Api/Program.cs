@@ -17,9 +17,11 @@ using Vagalume.Domain.Enums;
 using Vagalume.Infra.Data;
 using Vagalume.Infra.Providers;
 using Vagalume.Infra.Services;
+using Vagalume.Infra.Services.Analise;
 using Vagalume.Infra.Services.Busca;
 using Vagalume.Infra.Services.Busca.Fontes;
 using Vagalume.Infra.Services.Busca.Notificacoes;
+using Vagalume.Infra.Services.Seguranca;
 
 Env.Load();
 
@@ -135,6 +137,19 @@ builder.Services.AddScoped<IFonteVagas, CathoFonte>();
 builder.Services.AddScoped<IFonteVagas, RssFonte>();
 builder.Services.AddScoped<INotificadorBusca, NotificadorBusca>();
 builder.Services.AddScoped<IBuscaVagasService, ColetaVagasService>();
+
+// Análise de compatibilidade (gap-analysis) com IA — provedor do próprio usuário (BYOK)
+builder.Services.Configure<IaOptions>(builder.Configuration.GetSection("Ia"));
+builder.Services.AddSingleton<ICriptografiaService, CriptografiaAesGcm>();
+builder.Services.AddSingleton<CatalogoProvedoresIa>();
+builder.Services.AddScoped<IExtratorTextoPdf, ExtratorTextoPdfPdfPig>();
+builder.Services.AddScoped<IAnalisadorCompatibilidade, AnalisadorCompatibilidadeIa>();
+
+var iaTimeout = builder.Configuration.GetValue("Ia:TimeoutSegundos", 50);
+builder.Services.AddHttpClient(AnalisadorCompatibilidadeIa.ClientName, client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(iaTimeout, 5, 120));
+});
 
 // Execução assíncrona (fila + worker) e agendador
 builder.Services.AddSingleton<IBuscaQueue, BuscaQueue>();

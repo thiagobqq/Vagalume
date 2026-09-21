@@ -14,4 +14,6 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<FonteBusca> FontesBusca { get; set; } = new List<FonteBusca>();
     public ICollection<ExecucaoBusca> ExecucoesBusca { get; set; } = new List<ExecucaoBusca>();
     public PerfilBusca? PerfilBusca { get; set; }
+    public ConfiguracaoIa? ConfiguracaoIa { get; set; }
+    public ICollection<AnaliseCompatibilidade> AnalisesCompatibilidade { get; set; } = new List<AnaliseCompatibilidade>();
 }

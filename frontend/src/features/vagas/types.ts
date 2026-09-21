@@ -111,3 +111,26 @@ export const MODALIDADE_LABEL: Record<string, string> = {
 }
 
 export const DIAS_LABEL = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"] as const
+
+export type RequisitoCompatibilidadeDto = {
+  requisito: string
+  atendido: boolean
+  evidencia: string | null
+  gap: string | null
+}
+
+export type AnaliseCompatibilidadeDto = {
+  vagaId: string
+  vagaTitulo: string
+  empresa: string
+  curriculoId: string
+  curriculoNome: string
+  score: number
+  resumo: string
+  requisitos: RequisitoCompatibilidadeDto[]
+  sugestoes: string[]
+  provedor: string
+  modelo: string
+  desatualizada: boolean
+  criadoEm: string
+}

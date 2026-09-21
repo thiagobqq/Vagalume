@@ -1,5 +1,6 @@
-import { apiJson } from "@/lib/api"
+import { apiFetch, apiJson, ApiError } from "@/lib/api"
 import type {
+  AnaliseCompatibilidadeDto,
   CriarFonteBuscaRequest,
   ExecucaoBuscaDto,
   FonteBuscaDto,
@@ -75,4 +76,26 @@ export function obterExecucao(id: string) {
 
 export function listarExecucoesBusca() {
   return apiJson<ExecucaoBuscaDto[]>("/api/busca/execucoes")
+}
+
+export async function obterCompatibilidade(vagaId: string): Promise<AnaliseCompatibilidadeDto | null> {
+  const res = await apiFetch(`/api/vagas/${vagaId}/compatibilidade`)
+  const text = await res.text()
+  if (res.status === 404) return null
+
+  let envelope: { success: boolean; message: string; data: AnaliseCompatibilidadeDto | null } | null = null
+  try {
+    envelope = text ? JSON.parse(text) : null
+  } catch {
+    throw new ApiError(res.status, text || res.statusText)
+  }
+
+  if (!res.ok || envelope?.success === false) {
+    throw new ApiError(res.status, envelope?.message || `Erro ${res.status}`)
+  }
+  return envelope?.data ?? null
+}
+
+export function gerarCompatibilidade(vagaId: string) {
+  return apiJson<AnaliseCompatibilidadeDto>(`/api/vagas/${vagaId}/compatibilidade`, { method: "POST" })
 }

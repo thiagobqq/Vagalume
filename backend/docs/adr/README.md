@@ -22,3 +22,5 @@ Decisões de arquitetura do backend do Analista de Busca de Emprego. Cada ADR é
 | [0016](ADR-0016-fontes-brasileiras-e-scraping.md) | Fontes brasileiras e scraping (complementa o ADR-0015) | Aceito |
 | [0017](ADR-0017-execucao-busca-assincrona.md) | Execução de busca assíncrona (fila + 202 + polling) | Aceito |
 | [0018](ADR-0018-postgresql-no-lugar-do-sqlserver.md) | PostgreSQL no lugar do SQL Server (supersede o banco do ADR-0001) | Aceito |
+| [0019](ADR-0019-gap-analysis-curriculo-vaga-ia.md) | Gap-analysis currículo × vaga com IA | Aceito |
+| [0020](ADR-0020-byok-provedor-de-ia-do-usuario.md) | Provedor de IA do usuário (BYOK), presets e cifragem da chave | Aceito |

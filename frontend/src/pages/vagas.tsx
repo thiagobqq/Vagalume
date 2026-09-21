@@ -8,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useVagas } from "@/hooks/use-vagas"
 import { useBuscaConfig } from "@/hooks/use-busca"
+import { useAuth } from "@/features/auth/auth-context"
+import { PERMISSOES } from "@/features/auth/permissoes"
+import { CompatibilidadeDialog } from "@/features/vagas/compatibilidade-dialog"
 import {
   DIAS_LABEL,
   FONTE_HINT,
@@ -32,6 +35,7 @@ import {
   RefreshCw,
   Search,
   Trash2,
+  Wand2,
   X,
   Zap,
 } from "lucide-react"
@@ -81,7 +85,13 @@ function Metricas({ execucao }: { execucao: ExecucaoBuscaDto | null }) {
   )
 }
 
-function VagaCard({ vaga, onAplicar, onDescartar }: { vaga: VagaDto; onAplicar: () => void; onDescartar: () => void }) {
+function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompatibilidade }: {
+  vaga: VagaDto
+  onAplicar: () => void
+  onDescartar: () => void
+  podeCompatibilidade: boolean
+  onCompatibilidade: () => void
+}) {
   const [aplicando, setAplicando] = useState(false)
   const [descartando, setDescartando] = useState(false)
 
@@ -121,6 +131,17 @@ function VagaCard({ vaga, onAplicar, onDescartar }: { vaga: VagaDto; onAplicar: 
       </div>
 
       <div className="mt-3 flex items-center gap-2">
+        {podeCompatibilidade && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={aplicando || descartando}
+            onClick={onCompatibilidade}
+          >
+            <Wand2 className="h-3.5 w-3.5" /> compatibilidade
+          </Button>
+        )}
         <Button
           size="sm"
           className="gap-1.5"
@@ -159,7 +180,11 @@ function VagaCard({ vaga, onAplicar, onDescartar }: { vaga: VagaDto; onAplicar: 
 
 function InboxTab() {
   const { vagas, loading, erro, executando, ultima, refresh, buscarAgora, aplicar, descartar } = useVagas()
+  const { hasPermissao } = useAuth()
   const [q, setQ] = useState("")
+  const [compat, setCompat] = useState<VagaDto | null>(null)
+
+  const podeCompatibilidade = hasPermissao(PERMISSOES.compatibilidade)
 
   const filtradas = useMemo(() => {
     if (!q) return vagas
@@ -232,10 +257,20 @@ function InboxTab() {
               vaga={v}
               onAplicar={() => void aplicar(v.id)}
               onDescartar={() => void descartar(v.id)}
+              podeCompatibilidade={podeCompatibilidade}
+              onCompatibilidade={() => setCompat(v)}
             />
           ))}
         </div>
       )}
+
+      <CompatibilidadeDialog
+        vaga={compat}
+        open={!!compat}
+        onOpenChange={(open) => {
+          if (!open) setCompat(null)
+        }}
+      />
     </div>
   )
 }

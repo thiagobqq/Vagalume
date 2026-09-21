@@ -44,6 +44,14 @@ backend/
 | GET | `/api/curriculos` | sim | lista flag `ativo` |
 | GET | `/api/curriculos/{id}/arquivo` | sim | stream PDF |
 | PATCH | `/api/curriculos/{id}/ativo` | sim | marcar ativo |
+| GET | `/api/ia/provedores` | sim¹ | catálogo de provedores de IA (sem URL livre) |
+| GET | `/api/ia/configuracao` | sim¹ | provedor/modelo do usuário (chave mascarada) |
+| PUT | `/api/ia/configuracao` | sim¹ | salva provedor/modelo/API key (cifrada) |
+| POST | `/api/ia/testar` | sim¹ | testa a conexão com o provedor |
+| GET | `/api/vagas/{id}/compatibilidade` | sim¹ | análise de compatibilidade existente |
+| POST | `/api/vagas/{id}/compatibilidade` | sim¹ | gera/regera gap-analysis currículo × vaga |
+
+¹ Policy `gap_analysis.acesso` (ADR-0019/0020).
 
 - `origem`: `LinkedIn,Gupy,Catho,Indicacao,SiteEmpresa,Outro` (400 se inválido)
 - `status`: `Aplicado,Triagem,Entrevista,Oferta,Encerrado` (400 se inválido, no-op se mesmo status)
@@ -55,11 +63,15 @@ backend/
 - `Candidatura` flat: `Empresa*`, `Cargo*`, `Link?`, `Origem*`, `Observacoes?`, `Status` denormalizado, `CriadoEm/AtualizadoEm`
 - `EventoTransicaoCandidatura`: `StatusAnterior?`, `StatusNovo`, `Observacao?`, `CriadoEm` — transação atômica com `Candidatura.Status`
 - `Curriculo`: `NomeArquivoOriginal`, `CaminhoArmazenado` (`{usuarioId}/{guid}.pdf`), `TamanhoBytes`, `Ativo`, `CriadoEm` — upload desativa anterior mesma transação
+- `Vaga`: oportunidade descoberta pela busca (`Titulo`, `Empresa`, `Url`, `Descricao`, `Status`, dedup) — inbox separada das candidaturas (ADRs 0014–0017)
+- `ConfiguracaoIa`: provedor de IA do usuário (BYOK) — `Provedor`, `Modelo`, `ApiKeyCriptografada` (AES-256-GCM), `Ativo` (ADR-0020)
+- `AnaliseCompatibilidade`: gap-analysis currículo ativo × vaga — `Score`, `Resumo`, `Requisitos`, `Sugestoes`, `CurriculoId`, único por `(UsuarioId, VagaId)` (ADR-0019)
 
 ## Rodar local (sem Docker, precisa PostgreSQL)
 ```bash
 export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123"
 export Uploads__BasePath="/tmp/vagalume_uploads"
+export Seguranca__ChaveCripto="troque-este-segredo-em-producao"   # cifra a API key de IA (BYOK)
 dotnet run --project src/Vagalume.Api
 # Swagger: http://localhost:5000/swagger
 ```

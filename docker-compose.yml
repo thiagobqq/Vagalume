@@ -30,6 +30,8 @@ services:
       Jwt__Key: "${JWT_KEY:-chave-super-secreta-de-32-caracteres!!-vagalume-dev}"
       Jwt__Issuer: "${JWT_ISSUER:-vagalume}"
       Jwt__Audience: "${JWT_AUDIENCE:-vagalume}"
+      Seguranca__ChaveCripto: "${SEGURANCA_CHAVE_CRIPTO:-troque-este-segredo-em-producao}"
+      Ia__Presets__OllamaBaseUrl: "${IA_PRESETS_OLLAMA_BASE_URL:-}"
       Uploads__BasePath: "/app/uploads"
     ports:
       - "${API_PORT:-5000}:8080"

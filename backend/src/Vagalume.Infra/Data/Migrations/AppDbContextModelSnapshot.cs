@@ -152,6 +152,65 @@ namespace Vagalume.Infra.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Vagalume.Domain.Entities.AnaliseCompatibilidade", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CurriculoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Provedor")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Requisitos")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Resumo")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Sugestoes")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VagaId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurriculoId");
+
+                    b.HasIndex("VagaId");
+
+                    b.HasIndex("UsuarioId", "VagaId")
+                        .IsUnique();
+
+                    b.ToTable("AnalisesCompatibilidade");
+                });
+
             modelBuilder.Entity("Vagalume.Domain.Entities.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -272,6 +331,46 @@ namespace Vagalume.Infra.Data.Migrations
                     b.HasIndex("UsuarioId", "CriadoEm");
 
                     b.ToTable("Candidaturas");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.ConfiguracaoIa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ApiKeyCriptografada")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Provedor")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique();
+
+                    b.ToTable("ConfiguracoesIa");
                 });
 
             modelBuilder.Entity("Vagalume.Domain.Entities.Curriculo", b =>
@@ -718,11 +817,49 @@ namespace Vagalume.Infra.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Vagalume.Domain.Entities.AnaliseCompatibilidade", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.Curriculo", "Curriculo")
+                        .WithMany()
+                        .HasForeignKey("CurriculoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
+                        .WithMany("AnalisesCompatibilidade")
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Vagalume.Domain.Entities.Vaga", "Vaga")
+                        .WithMany()
+                        .HasForeignKey("VagaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Curriculo");
+
+                    b.Navigation("Usuario");
+
+                    b.Navigation("Vaga");
+                });
+
             modelBuilder.Entity("Vagalume.Domain.Entities.Candidatura", b =>
                 {
                     b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
                         .WithMany("Candidaturas")
                         .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.ConfiguracaoIa", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
+                        .WithOne("ConfiguracaoIa")
+                        .HasForeignKey("Vagalume.Domain.Entities.ConfiguracaoIa", "UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -826,7 +963,11 @@ namespace Vagalume.Infra.Data.Migrations
 
             modelBuilder.Entity("Vagalume.Domain.Entities.AppUser", b =>
                 {
+                    b.Navigation("AnalisesCompatibilidade");
+
                     b.Navigation("Candidaturas");
+
+                    b.Navigation("ConfiguracaoIa");
 
                     b.Navigation("Curriculos");
 
