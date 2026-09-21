@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { PageHeader } from "@/components/app/page-header"
 import { Panel } from "@/components/app/panel"
+import { NotebookCard, NotebookPanel } from "@/components/app/notebook-panel"
+import { PostItStat } from "@/components/app/post-it"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -47,33 +49,31 @@ function parseLista(valor: string): string[] {
     .filter(Boolean)
 }
 
+const FONTE_COLOR: Record<string, string> = {
+  Gupy: "var(--crayon-blue)",
+  Trampos: "var(--crayon-green)",
+  Programathor: "var(--crayon-purple)",
+  InfoJobs: "var(--crayon-orange)",
+  Catho: "var(--crayon-pink)",
+  Rss: "var(--crayon-blue)",
+}
+
 function Metricas({ execucao }: { execucao: ExecucaoBuscaDto | null }) {
   const itens = [
-    { label: "Encontradas", valor: execucao?.encontradas ?? 0 },
-    { label: "Aprovadas", valor: execucao?.aprovadas ?? 0 },
-    { label: "Duplicadas", valor: execucao?.duplicadas ?? 0 },
-    { label: "Novas", valor: execucao?.adicionadas ?? 0 },
+    { label: "Encontradas", valor: execucao?.encontradas ?? 0, color: "var(--crayon-blue)" },
+    { label: "Aprovadas", valor: execucao?.aprovadas ?? 0, color: "var(--crayon-green)" },
+    { label: "Duplicadas", valor: execucao?.duplicadas ?? 0, color: "var(--crayon-orange)" },
+    { label: "Novas", valor: execucao?.adicionadas ?? 0, color: "var(--crayon-purple)" },
   ]
   return (
-    <Panel className="p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm font-semibold">Última busca</div>
-        {execucao?.finalizadaEm && (
-          <span className="text-xs text-muted-foreground">
-            {new Date(execucao.finalizadaEm).toLocaleString("pt-BR")}
-          </span>
-        )}
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {itens.map((i) => (
-          <div key={i.label} className="rounded-lg border bg-muted/30 px-3 py-2">
-            <div className="text-lg font-bold tabular-nums">{i.valor}</div>
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{i.label}</div>
-          </div>
+          <PostItStat key={i.label} label={i.label} value={i.valor} color={i.color} />
         ))}
       </div>
       {execucao?.detalhesPorFonte?.some((d) => !d.sucesso) && (
-        <div className="mt-3 space-y-1">
+        <div className="space-y-1">
           {execucao.detalhesPorFonte.filter((d) => !d.sucesso).map((d) => (
             <div key={d.fonteNome} className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {d.fonteNome}: {d.erro ?? "falha na coleta"}
@@ -81,7 +81,7 @@ function Metricas({ execucao }: { execucao: ExecucaoBuscaDto | null }) {
           ))}
         </div>
       )}
-    </Panel>
+    </div>
   )
 }
 
@@ -96,7 +96,10 @@ function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompati
   const [descartando, setDescartando] = useState(false)
 
   return (
-    <Panel className="p-4">
+    <NotebookCard
+      headerColor={FONTE_COLOR[vaga.fonteTipo] ?? "var(--crayon-blue)"}
+      ruled
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <a
@@ -143,6 +146,7 @@ function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompati
           </Button>
         )}
         <Button
+          variant="outline"
           size="sm"
           className="gap-1.5"
           disabled={aplicando || descartando}
@@ -174,7 +178,7 @@ function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompati
           {descartando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />} descartar
         </Button>
       </div>
-    </Panel>
+    </NotebookCard>
   )
 }
 
@@ -242,13 +246,15 @@ function InboxTab() {
           <Loader2 className="h-5 w-5 animate-spin" /> carregando vagas...
         </div>
       ) : filtradas.length === 0 ? (
-        <Panel className="px-4 py-12 text-center">
-          <Inbox className="mx-auto h-6 w-6 text-muted-foreground" />
-          <p className="mt-2 text-sm font-medium">nenhuma vaga nova</p>
-          <p className="text-xs text-muted-foreground">
-            configure suas fontes e critérios na aba Configuração e clique em "buscar agora".
-          </p>
-        </Panel>
+        <NotebookPanel>
+          <div className="py-8 text-center">
+            <Inbox className="mx-auto h-6 w-6 text-muted-foreground" />
+            <p className="mt-2 text-sm font-medium">nenhuma vaga nova</p>
+            <p className="text-xs text-muted-foreground">
+              configure suas fontes e critérios na aba Configuração e clique em "buscar agora".
+            </p>
+          </div>
+        </NotebookPanel>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {filtradas.map((v) => (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Panel } from "@/components/app/panel"
+import { NotebookPanel } from "@/components/app/notebook-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -131,22 +131,20 @@ export function ConfiguracaoIaPanel() {
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{erro}</div>
       )}
 
-      <Panel className="p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h3 className="flex items-center gap-2 text-sm font-semibold">
-              <KeyRound className="h-4 w-4" /> Provedor de IA
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Use sua própria chave. Ela é armazenada cifrada e nunca é exibida de volta.
-            </p>
-          </div>
-          <Badge variant={config?.temChave || provedorAtual?.requerChave === false ? "default" : "outline"}>
+      <NotebookPanel
+        title={
+          <span className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4" /> Provedor de IA
+          </span>
+        }
+        description="Use sua própria chave. Ela é armazenada cifrada e nunca é exibida de volta."
+        badge={
+          <Badge variant={config?.temChave || provedorAtual?.requerChave === false ? "offer" : "outline"}>
             {config ? (config.temChave ? "configurado" : "sem chave") : "não configurado"}
           </Badge>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        }
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1 text-xs font-medium">
             Provedor
             <Select value={provedor} onValueChange={trocarProvedor}>
@@ -181,8 +179,12 @@ export function ConfiguracaoIaPanel() {
                 key={m}
                 type="button"
                 size="sm"
-                variant={modelo === m ? "default" : "outline"}
-                className="h-6 px-2 text-[11px]"
+                variant={modelo === m ? "secondary" : "outline"}
+                className={
+                  modelo === m
+                    ? "h-6 px-2 text-[11px] ring-1 ring-ink/30"
+                    : "h-6 px-2 text-[11px]"
+                }
                 onClick={() => setModelo(m)}
               >
                 {m}
@@ -205,10 +207,12 @@ export function ConfiguracaoIaPanel() {
           <div className="flex items-end">
             <Button
               type="button"
-              variant={ativo ? "default" : "outline"}
+              variant={ativo ? "secondary" : "outline"}
               size="sm"
+              className="gap-1.5"
               onClick={() => setAtivo((v) => !v)}
             >
+              {ativo && <span className="h-1.5 w-1.5 rounded-full bg-[var(--st-offer)]" aria-hidden="true" />}
               {ativo ? "IA ativa" : "IA pausada"}
             </Button>
           </div>
@@ -237,7 +241,7 @@ export function ConfiguracaoIaPanel() {
             {salvando && <Loader2 className="h-4 w-4 animate-spin" />} salvar
           </Button>
         </div>
-      </Panel>
+      </NotebookPanel>
 
       <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
         <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />

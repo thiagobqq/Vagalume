@@ -1,6 +1,7 @@
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { NotebookPanel } from "@/components/app/notebook-panel"
 import { useCurriculos } from "@/hooks/use-curriculos"
 import { Loader2, Upload, Download, Star, FileText } from "lucide-react"
 
@@ -47,19 +48,25 @@ export function CurriculosPanel() {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border-[1.5px] border-ink bg-card shadow-hard">
-      <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-5 py-3.5">
-        <div>
-          <h3 className="text-sm font-semibold">Seus currículos</h3>
-          <p className="text-xs text-muted-foreground">PDF até 10 MB. Um fica ativo por vez.</p>
-        </div>
+    <NotebookPanel
+      title="Seus currículos"
+      description="PDF até 10 MB. Um fica ativo por vez."
+      badge={
+        items.length > 0 ? (
+          <Badge variant="outline" className="tabular-nums">
+            {items.length}
+          </Badge>
+        ) : undefined
+      }
+      actions={
         <Button size="sm" className="gap-2" onClick={() => inputRef.current?.click()} disabled={uploading}>
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} enviar PDF
         </Button>
-        <input ref={inputRef} type="file" accept=".pdf" className="hidden" onChange={onFile} />
-      </div>
+      }
+    >
+      <input ref={inputRef} type="file" accept=".pdf" className="hidden" onChange={onFile} />
 
-      <div className="space-y-3 p-5">
+      <div className="space-y-3">
         {msg && (
           <div className="rounded-lg border border-[color:var(--st-offer)]/30 bg-[var(--st-offer-soft)] px-3 py-2 text-xs text-[color:var(--st-offer)]">
             {msg}
@@ -81,7 +88,7 @@ export function CurriculosPanel() {
             <Loader2 className="h-5 w-5 animate-spin" /> carregando...
           </div>
         ) : items.length === 0 ? (
-          <div className="rounded-lg border border-dashed px-4 py-10 text-center">
+          <div className="rounded-lg border border-dashed border-ink/25 px-4 py-10 text-center">
             <FileText className="mx-auto h-6 w-6 text-muted-foreground" />
             <p className="mt-2 text-sm font-medium">nenhum currículo ainda</p>
             <p className="text-xs text-muted-foreground">envie seu PDF para usar depois nas candidaturas</p>
@@ -89,15 +96,15 @@ export function CurriculosPanel() {
         ) : (
           <div className="space-y-2">
             {items.map((c) => (
-              <div key={c.id} className="flex items-center gap-3 rounded-lg border bg-muted/30 px-3 py-2.5">
-                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border bg-card">
+              <div key={c.id} className="flex items-center gap-3 rounded-lg border-[1.5px] border-ink/20 bg-[var(--nb-card)] px-3 py-2.5 shadow-hard-xs">
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border-[1.5px] border-ink/20 bg-card">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 truncate text-sm font-medium">
                     {c.nomeArquivoOriginal}
                     {c.ativo && (
-                      <Badge className="gap-1 text-[10px]">
+                      <Badge variant="offer" className="gap-1 text-[10px]">
                         <Star className="h-3 w-3" /> ativo
                       </Badge>
                     )}
@@ -121,6 +128,6 @@ export function CurriculosPanel() {
           </div>
         )}
       </div>
-    </div>
+    </NotebookPanel>
   )
 }
