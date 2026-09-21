@@ -10,9 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useVagas } from "@/hooks/use-vagas"
 import { useBuscaConfig } from "@/hooks/use-busca"
+import { useAplicacaoPendente } from "@/hooks/use-aplicacao-pendente"
 import { useAuth } from "@/features/auth/auth-context"
 import { PERMISSOES } from "@/features/auth/permissoes"
 import { CompatibilidadeDialog } from "@/features/vagas/compatibilidade-dialog"
+import { ConfirmarAplicacaoDialog } from "@/features/vagas/confirmar-aplicacao-dialog"
 import {
   DIAS_LABEL,
   FONTE_HINT,
@@ -92,7 +94,6 @@ function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompati
   podeCompatibilidade: boolean
   onCompatibilidade: () => void
 }) {
-  const [aplicando, setAplicando] = useState(false)
   const [descartando, setDescartando] = useState(false)
 
   return (
@@ -139,7 +140,7 @@ function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompati
             variant="outline"
             size="sm"
             className="gap-1.5"
-            disabled={aplicando || descartando}
+            disabled={descartando}
             onClick={onCompatibilidade}
           >
             <Wand2 className="h-3.5 w-3.5" /> compatibilidade
@@ -149,23 +150,16 @@ function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompati
           variant="outline"
           size="sm"
           className="gap-1.5"
-          disabled={aplicando || descartando}
-          onClick={async () => {
-            setAplicando(true)
-            try {
-              onAplicar()
-            } finally {
-              setAplicando(false)
-            }
-          }}
+          disabled={descartando}
+          onClick={onAplicar}
         >
-          {aplicando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />} aplicar
+          <Check className="h-3.5 w-3.5" /> aplicar
         </Button>
         <Button
           variant="ghost"
           size="sm"
           className="gap-1.5 text-muted-foreground hover:text-foreground"
-          disabled={aplicando || descartando}
+          disabled={descartando}
           onClick={async () => {
             setDescartando(true)
             try {
@@ -189,6 +183,21 @@ function InboxTab() {
   const [compat, setCompat] = useState<VagaDto | null>(null)
 
   const podeCompatibilidade = hasPermissao(PERMISSOES.compatibilidade)
+
+  const { pendente, iniciar, limpar } = useAplicacaoPendente()
+
+  // abre a vaga em outra aba e agenda a confirmação ("você aplicou?")
+  function abrirParaAplicar(v: VagaDto) {
+    iniciar(v)
+    const win = window.open(v.url, "_blank")
+    if (win) win.opener = null
+  }
+
+  async function confirmarAplicacao() {
+    if (!pendente) return
+    await aplicar(pendente.id)
+    limpar()
+  }
 
   const filtradas = useMemo(() => {
     if (!q) return vagas
@@ -261,7 +270,7 @@ function InboxTab() {
             <VagaCard
               key={v.id}
               vaga={v}
-              onAplicar={() => void aplicar(v.id)}
+              onAplicar={() => abrirParaAplicar(v)}
               onDescartar={() => void descartar(v.id)}
               podeCompatibilidade={podeCompatibilidade}
               onCompatibilidade={() => setCompat(v)}
@@ -269,6 +278,12 @@ function InboxTab() {
           ))}
         </div>
       )}
+
+      <ConfirmarAplicacaoDialog
+        pendente={pendente}
+        onConfirm={confirmarAplicacao}
+        onCancel={limpar}
+      />
 
       <CompatibilidadeDialog
         vaga={compat}
