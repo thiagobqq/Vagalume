@@ -10,6 +10,8 @@ type AuthState = {
   register: (nome: string, email: string, senha: string) => Promise<void>
   logout: () => void
   isAuthenticated: boolean
+  hasPermissao: (chave: string) => boolean
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -80,6 +82,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(null)
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    const { res, envelope } = await apiEnvelope<UsuarioDto>("/api/auth/me")
+    if (res.ok && envelope?.success && envelope.data) {
+      localStorage.setItem("vagalume:user", JSON.stringify(envelope.data))
+      setUser(envelope.data)
+    }
+  }, [])
+
+  const hasPermissao = useCallback(
+    (chave: string) => !!user?.permissoes?.includes(chave),
+    [user]
+  )
+
+  // permissões mudam no servidor: recarrega o usuário quando há token
+  useEffect(() => {
+    if (accessToken) void refreshUser()
+  }, [accessToken, refreshUser])
+
   // se token mudou externamente (ex: refresh), refletir
   useEffect(() => {
     const onStorage = () => {
@@ -91,8 +111,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const value = useMemo<AuthState>(
-    () => ({ user, accessToken, loading, login, register, logout, isAuthenticated: !!accessToken }),
-    [user, accessToken, loading, login, register, logout]
+    () => ({
+      user,
+      accessToken,
+      loading,
+      login,
+      register,
+      logout,
+      isAuthenticated: !!accessToken,
+      hasPermissao,
+      refreshUser,
+    }),
+    [user, accessToken, loading, login, register, logout, hasPermissao, refreshUser]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

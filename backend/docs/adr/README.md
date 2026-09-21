@@ -16,3 +16,4 @@ Decisões de arquitetura do backend do Analista de Busca de Emprego. Cada ADR é
 | [0010](ADR-0010-sem-auditoria-generica-fatia-1.md) | Sem interceptor de auditoria genérico na fatia 1 | Aceito |
 | [0011](ADR-0011-envelope-de-resposta-consistente.md) | Envelope de resposta consistente `GenericResponseData<T>` | Aceito |
 | [0012](ADR-0012-contrato-api-fatia-1.md) | Contrato de API da fatia 1 | Aceito |
+| [0013](ADR-0013-autorizacao-por-permissoes.md) | Autorização por permissões (sem roles), preparada para paywall | Aceito |

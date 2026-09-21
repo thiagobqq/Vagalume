@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sparkles, Link2, Wand2, Loader2 } from "lucide-react"
+import { Sparkles, Link2, Loader2 } from "lucide-react"
 import type { Origem } from "@/features/candidaturas/types"
 import { ORIGEM_VALUES } from "@/features/candidaturas/types"
 
@@ -63,28 +63,27 @@ export function AddByLinkDialog({ open, onOpenChange, onCreate }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o) }}>
-      <DialogContent className="sm:max-w-[560px] bg-[#fef9f0]">
+      <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <span className="w-8 h-8 rounded-lg bg-primary border border-foreground grid place-items-center">
-              <Wand2 className="w-4 h-4" />
+          <DialogTitle className="flex items-center gap-2">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
+              <Sparkles className="h-4 w-4" />
             </span>
             Nova candidatura
-            <span className="hand font-normal text-sm text-muted-foreground rotate-[-2deg]">seu caderno</span>
           </DialogTitle>
           <DialogDescription>Preencha os dados da vaga. Origem é obrigatória (backend).</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Empresa *</Label>
-              <Input value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Ex: Nubank" className="bg-white" maxLength={200} />
+              <Input value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Ex: Nubank" maxLength={200} />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Origem *</Label>
               <Select value={origem} onValueChange={(v) => setOrigem(v as Origem)}>
-                <SelectTrigger className="bg-white">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -96,28 +95,32 @@ export function AddByLinkDialog({ open, onOpenChange, onCreate }: Props) {
             </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>Cargo *</Label>
-            <Input value={cargo} onChange={(e) => setCargo(e.target.value)} placeholder="Ex: Frontend Pleno" className="bg-white" maxLength={200} />
+            <Input value={cargo} onChange={(e) => setCargo(e.target.value)} placeholder="Ex: Frontend Pleno" maxLength={200} />
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5"><Link2 className="w-3.5 h-3.5" /> Link (opcional)</Label>
-            <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://..." className="bg-white text-xs" />
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5"><Link2 className="h-3.5 w-3.5" /> Link (opcional)</Label>
+            <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://..." className="text-xs" />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>Observações (opcional)</Label>
-            <Textarea placeholder="Ex: indiquei via recrutadora Ana..." value={obs} onChange={(e) => setObs(e.target.value)} className="bg-white" rows={2} maxLength={2000} />
+            <Textarea placeholder="Ex: indiquei via recrutadora Ana..." value={obs} onChange={(e) => setObs(e.target.value)} rows={2} maxLength={2000} />
           </div>
 
-          {err && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{err}</div>}
+          {err && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              {err}
+            </div>
+          )}
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-1">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
             <Button onClick={handleSave} disabled={saving} className="gap-2">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {saving ? "Salvando..." : "Salvar no caderno ✦"}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {saving ? "Salvando..." : "Salvar candidatura"}
             </Button>
           </div>
         </div>

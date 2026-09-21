@@ -85,6 +85,6 @@ export type MudarStatusRequest = {
 }
 
 // Auth
-export type UsuarioDto = { id: string; nome: string; email: string }
+export type UsuarioDto = { id: string; nome: string; email: string; permissoes?: string[] }
 export type AuthResponseDto = { accessToken: string; refreshToken: string; usuario: UsuarioDto }
 export type RefreshResponseDto = { accessToken: string; refreshToken: string }

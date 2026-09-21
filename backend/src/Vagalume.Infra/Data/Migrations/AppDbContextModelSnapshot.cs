@@ -17,7 +17,7 @@ namespace Vagalume.Infra.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0-rc.2.25502.107")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -382,6 +382,42 @@ namespace Vagalume.Infra.Data.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("Vagalume.Domain.Entities.UsuarioPermissao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("ConcedidoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ConcedidoPorUsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ExpiraEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Origem")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "Chave")
+                        .IsUnique();
+
+                    b.ToTable("UsuarioPermissoes");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
@@ -477,11 +513,24 @@ namespace Vagalume.Infra.Data.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("Vagalume.Domain.Entities.UsuarioPermissao", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
+                        .WithMany("Permissoes")
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Vagalume.Domain.Entities.AppUser", b =>
                 {
                     b.Navigation("Candidaturas");
 
                     b.Navigation("Curriculos");
+
+                    b.Navigation("Permissoes");
 
                     b.Navigation("RefreshTokens");
                 });

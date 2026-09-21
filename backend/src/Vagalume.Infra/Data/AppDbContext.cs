@@ -13,6 +13,7 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
     public DbSet<EventoTransicaoCandidatura> EventosTransicao => Set<EventoTransicaoCandidatura>();
     public DbSet<Curriculo> Curriculos => Set<Curriculo>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<UsuarioPermissao> UsuarioPermissoes => Set<UsuarioPermissao>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

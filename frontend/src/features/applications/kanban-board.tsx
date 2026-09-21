@@ -29,7 +29,7 @@ export function KanbanBoard({
   }, [apps])
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-start">
+    <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:px-0">
       {STATUS_ORDER.map((s) => (
         <KanbanColumn key={s} status={s} apps={grouped[s]} onMove={onMove} onOpenDetail={onOpenDetail} />
       ))}

@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { ExternalLink, Clock3 } from "lucide-react"
 import type { CandidaturaDto, Status } from "@/features/candidaturas/types"
 import { STATUS_LABEL } from "@/features/candidaturas/types"
+import { STATUS_STYLE } from "@/features/candidaturas/status-style"
 
 function daysSince(iso: string) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
@@ -20,6 +22,7 @@ export function ApplicationCard({
   const days = daysSince(app.criadoEm)
   const needsFollowUp = days >= 7 && app.status !== "Encerrado" && app.status !== "Oferta"
   const [updating, setUpdating] = useState(false)
+  const { dot } = STATUS_STYLE[(app.status as Status) || "Aplicado"]
 
   async function handleMove(v: string) {
     setUpdating(true)
@@ -32,7 +35,7 @@ export function ApplicationCard({
 
   return (
     <div
-      className="group bg-white border-[1.5px] border-foreground rounded-xl p-3 shadow-[3px_3px_0_var(--foreground)] hover:translate-y-[-1px] hover:shadow-[4px_4px_0_var(--foreground)] transition-all flex flex-col gap-2.5 cursor-pointer"
+      className="group flex cursor-pointer flex-col gap-2.5 rounded-lg border bg-card p-3 shadow-sm transition-all hover:border-foreground/20 hover:shadow-card"
       onClick={() => onOpenDetail?.(app.id)}
       role="button"
       tabIndex={0}
@@ -42,48 +45,61 @@ export function ApplicationCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="font-extrabold text-[14px] leading-tight truncate">{app.empresa}</div>
-          <div className="text-[12.5px] leading-tight truncate text-muted-foreground">{app.cargo}</div>
+          <div className="truncate text-sm font-semibold leading-tight">{app.empresa}</div>
+          <div className="truncate text-xs leading-tight text-muted-foreground">{app.cargo}</div>
         </div>
-        <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border border-foreground/15 bg-[#f8f5ec]">{app.origem}</span>
+        <Badge variant="outline" className="shrink-0 text-[10px] text-muted-foreground">
+          {app.origem}
+        </Badge>
       </div>
 
       <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
         <span className="inline-flex items-center gap-1">
-          <Clock3 className="w-3 h-3" />
+          <Clock3 className="h-3 w-3" />
           {days === 0 ? "hoje" : `${days}d`}
         </span>
         {app.link ? (
           <>
-            <span className="opacity-30">•</span>
+            <span className="opacity-40">•</span>
             <a
               href={app.link}
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 hover:text-foreground underline decoration-dotted underline-offset-2"
+              className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
             >
-              link <ExternalLink className="w-3 h-3" />
+              link <ExternalLink className="h-3 w-3" />
             </a>
           </>
         ) : null}
-        <span className="opacity-30">•</span>
-        <span className="truncate">{new Date(app.criadoEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
+        <span className="opacity-40">•</span>
+        <span className="truncate">
+          {new Date(app.criadoEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+        </span>
       </div>
 
-      {app.observacoes && <p className="text-xs leading-snug text-foreground/70 line-clamp-2 border-l-2 border-amber-200 pl-2">{app.observacoes}</p>}
+      {app.observacoes && (
+        <p className="line-clamp-2 border-l-2 border-border pl-2 text-xs leading-snug text-muted-foreground">
+          {app.observacoes}
+        </p>
+      )}
 
       {needsFollowUp && (
-        <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-1 self-start">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          <span className="text-[11px] font-bold text-amber-900 leading-none">{days}d sem retorno</span>
+        <div className="inline-flex items-center gap-1.5 self-start rounded-full bg-[var(--st-applied-soft)] px-2.5 py-1">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--st-applied)" }} />
+          <span className="text-[11px] font-medium leading-none text-[color:var(--st-applied)]">
+            {days}d sem retorno
+          </span>
         </div>
       )}
 
       <div onClick={(e) => e.stopPropagation()}>
         <Select value={app.status} onValueChange={handleMove} disabled={updating}>
-          <SelectTrigger className="h-7 text-xs font-bold rounded-full bg-[#f8f5ec] border-foreground/15 shadow-none px-3 w-full">
-            <SelectValue />
+          <SelectTrigger className="h-7 w-full rounded-md border-transparent bg-transparent px-2 text-xs font-medium text-muted-foreground shadow-none hover:bg-accent focus:ring-2">
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
+              <SelectValue />
+            </span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="Aplicado">{STATUS_LABEL.Aplicado}</SelectItem>

@@ -1,14 +1,18 @@
 using System.Text;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Vagalume.Api.Authorization;
 using Vagalume.Application.Common;
 using Vagalume.Domain.Abstractions;
+using Vagalume.Domain.Authorization;
 using Vagalume.Domain.Entities;
+using Vagalume.Domain.Enums;
 using Vagalume.Infra.Data;
 using Vagalume.Infra.Providers;
 using Vagalume.Infra.Services;
@@ -93,12 +97,18 @@ builder.Services.AddAuthentication(opts =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(opts =>
+{
+    foreach (var chave in Permissoes.Todas)
+        opts.AddPolicy(chave, policy => policy.Requirements.Add(new PermissaoRequirement(chave)));
+});
+builder.Services.AddScoped<IAuthorizationHandler, PermissaoAuthorizationHandler>();
 
 // Providers / Services
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IEntitlementService, EntitlementService>();
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(opts =>
@@ -166,6 +176,53 @@ using (var scope = app.Services.CreateScope())
         // em dev sem SQL, deixa passar para não quebrar build; mas loga
         if (!app.Environment.IsDevelopment())
             throw;
+    }
+
+    // seed do admin em desenvolvimento (idempotente)
+    if (app.Environment.IsDevelopment())
+    {
+        try
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var email = app.Configuration["Seed:Admin:Email"] ?? "admin@vagalume.dev";
+            var senha = app.Configuration["Seed:Admin:Senha"] ?? "admin123";
+
+            var admin = await userManager.FindByEmailAsync(email);
+            if (admin is null)
+            {
+                admin = new AppUser
+                {
+                    Id = Guid.NewGuid(),
+                    Nome = "Admin",
+                    UserName = email,
+                    Email = email,
+                    EmailConfirmed = true
+                };
+                var criado = await userManager.CreateAsync(admin, senha);
+                if (!criado.Succeeded)
+                    throw new InvalidOperationException(string.Join("; ", criado.Errors.Select(e => e.Description)));
+            }
+
+            var jaTemPermissao = await db.UsuarioPermissoes
+                .AnyAsync(p => p.UsuarioId == admin.Id && p.Chave == Permissoes.Admin);
+            if (!jaTemPermissao)
+            {
+                db.UsuarioPermissoes.Add(new UsuarioPermissao
+                {
+                    Id = Guid.NewGuid(),
+                    UsuarioId = admin.Id,
+                    Chave = Permissoes.Admin,
+                    ConcedidoEm = DateTime.UtcNow,
+                    Origem = OrigemPermissao.Manual
+                });
+                await db.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Erro ao semear admin de desenvolvimento");
+        }
     }
 }
 

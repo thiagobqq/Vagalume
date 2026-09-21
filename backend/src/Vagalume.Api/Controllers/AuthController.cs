@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Vagalume.Api.Extensions;
 using Vagalume.Application.Common;
 using Vagalume.Application.DTOs;
+using Vagalume.Domain.Abstractions;
 using Vagalume.Domain.Entities;
 using Vagalume.Infra.Data;
 using Vagalume.Infra.Services;
@@ -17,12 +20,18 @@ public class AuthController : ControllerBase
     private readonly UserManager<AppUser> _userManager;
     private readonly AppDbContext _db;
     private readonly ITokenService _tokenService;
+    private readonly IEntitlementService _entitlements;
 
-    public AuthController(UserManager<AppUser> userManager, AppDbContext db, ITokenService tokenService)
+    public AuthController(
+        UserManager<AppUser> userManager,
+        AppDbContext db,
+        ITokenService tokenService,
+        IEntitlementService entitlements)
     {
         _userManager = userManager;
         _db = db;
         _tokenService = tokenService;
+        _entitlements = entitlements;
     }
 
     [HttpPost("register")]
@@ -74,10 +83,36 @@ public class AuthController : ControllerBase
         {
             AccessToken = accessToken,
             RefreshToken = refresh.Token,
-            Usuario = new UsuarioDto { Id = user.Id, Nome = user.Nome, Email = user.Email! }
+            Usuario = await ToUsuarioDtoAsync(user)
         };
 
         return Ok(GenericResponseData<AuthResponseDto>.Ok(response, "Login realizado com sucesso"));
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(GenericResponseData<UsuarioDto>), 200)]
+    [ProducesResponseType(typeof(GenericResponseData<object>), 401)]
+    public async Task<IActionResult> Me()
+    {
+        var usuarioId = User.GetUserId();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == usuarioId);
+        if (user == null)
+            return Unauthorized(GenericResponseData<object>.Fail("Usuário não encontrado"));
+
+        return Ok(GenericResponseData<UsuarioDto>.Ok(await ToUsuarioDtoAsync(user)));
+    }
+
+    private async Task<UsuarioDto> ToUsuarioDtoAsync(AppUser user)
+    {
+        var permissoes = await _entitlements.ListarAsync(user.Id);
+        return new UsuarioDto
+        {
+            Id = user.Id,
+            Nome = user.Nome,
+            Email = user.Email!,
+            Permissoes = permissoes.ToList()
+        };
     }
 
     [HttpPost("refresh")]

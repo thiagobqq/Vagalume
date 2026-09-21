@@ -3,19 +3,18 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border-[1.5px] border-foreground px-2.5 py-0.5 text-xs font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring/60 focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-[2px_2px_0_var(--foreground)]",
-        secondary: "bg-secondary text-secondary-foreground",
-        outline: "bg-white text-foreground",
-        yellow: "bg-[#fef3c7] text-[#92400e] border-[#f7c948]",
-        pink: "bg-[#fce7f3] text-[#9d174d]",
-        blue: "bg-[#dbeafe] text-[#1e40af]",
-        green: "bg-[#dcfce7] text-[#14532d]",
-        orange: "bg-[#ffedd5] text-[#7c2d12]",
-        purple: "bg-[#ede9fe] text-[#4c1d95]",
+        default: "border-transparent bg-primary text-primary-foreground",
+        secondary: "border-transparent bg-secondary text-secondary-foreground",
+        outline: "border-border bg-card text-foreground",
+        applied: "border-transparent bg-[var(--st-applied-soft)] text-[color:var(--st-applied)]",
+        triage: "border-transparent bg-[var(--st-triage-soft)] text-[color:var(--st-triage)]",
+        interview: "border-transparent bg-[var(--st-interview-soft)] text-[color:var(--st-interview)]",
+        offer: "border-transparent bg-[var(--st-offer-soft)] text-[color:var(--st-offer)]",
+        closed: "border-transparent bg-[var(--st-closed-soft)] text-[color:var(--st-closed)]",
       },
     },
     defaultVariants: {

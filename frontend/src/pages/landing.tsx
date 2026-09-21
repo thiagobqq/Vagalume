@@ -1,128 +1,143 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { PaperSheet } from "@/components/app/paper-sheet"
+import { Panel } from "@/components/app/panel"
 import { AppHeader } from "@/components/app/app-header"
-import { Sparkles, NotebookPen, BellRing, Kanban, ArrowRight, Check } from "lucide-react"
+import { Sparkles, NotebookPen, BellRing, Kanban, ArrowRight, Check, Zap } from "lucide-react"
 
 export function Landing() {
   return (
-    <div className="min-h-screen bg-[#fef9f0]">
+    <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="max-w-[1120px] mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-10">
+      <main className="mx-auto max-w-6xl space-y-16 px-4 py-12 sm:px-6 sm:py-16">
         {/* hero */}
-        <PaperSheet withSpiral tape="top" className="p-6 sm:p-10 overflow-visible">
-          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-foreground bg-[#fef3c7] px-3 py-1 text-xs font-bold shadow-[2px_2px_0_var(--foreground)]">
-                <span className="w-2 h-2 rounded-full bg-[#f7c948] border border-foreground" /> MVP gratuito no ar
-              </div>
-              <h1 className="mt-4 text-[34px] sm:text-[44px] font-extrabold tracking-tight leading-[0.95]">
-                Não é tracker.
-                <br />
-                É seu <span className="doodle-underline">analista pessoal</span>
-                <br />
-                de vagas.
-              </h1>
-              <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground max-w-[52ch]">
-                Pare de perder controle em planilha. Anote como num caderno, veja seu funil e cole o link da vaga — a IA preenche empresa, cargo e requisitos sozinha.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link to="/app">
-                  <Button size="lg" className="gap-2">
-                    <Sparkles className="w-4 h-4" /> começar meu caderno <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-                <Link to="/login">
-                  <Button variant="outline" size="lg">
-                    já tenho conta
-                  </Button>
-                </Link>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
-                <span className="inline-flex items-center gap-1.5 bg-white border border-foreground rounded-full px-3 py-1">
-                  <Check className="w-3.5 h-3.5" /> sem cartão
-                </span>
-                <span className="inline-flex items-center gap-1.5 bg-white border border-foreground rounded-full px-3 py-1">✎ feito para quem aplica toda semana</span>
-              </div>
+        <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-primary" /> MVP gratuito no ar
             </div>
+            <h1 className="mt-5 text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl lg:text-[3.4rem]">
+              Não é tracker.
+              <br />
+              É seu <span className="doodle-underline">analista pessoal</span>
+              <br />
+              de vagas.
+            </h1>
+            <p className="mt-5 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground">
+              Pare de perder controle em planilha. Anote como num caderno, veja seu funil e cole o link da vaga — a IA
+              preenche empresa, cargo e requisitos sozinha.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link to="/app">
+                <Button size="lg" className="gap-2">
+                  <Sparkles className="h-4 w-4" /> começar meu caderno <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button variant="outline" size="lg">
+                  já tenho conta
+                </Button>
+              </Link>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-foreground" /> sem cartão de crédito
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-foreground" /> feito para quem aplica toda semana
+              </span>
+            </div>
+          </div>
 
-            {/* mini kanban preview */}
-            <div className="relative">
-              <div className="absolute -top-3 -right-2 rotate-[8deg] bg-[#f7c948] border-[1.5px] border-foreground rounded-lg px-3 py-1 text-xs font-extrabold shadow-[3px_3px_0_var(--foreground)] hand text-base">
-                cole o link → preenche!
-              </div>
-              <div className="rounded-2xl border-[1.5px] border-foreground bg-white p-3 shadow-[6px_6px_0_var(--foreground)] grid grid-cols-3 gap-2">
+          {/* preview */}
+          <div className="relative">
+            <div className="hand absolute -top-3 right-4 z-10 rotate-3 rounded-md bg-primary px-3 py-1 text-base font-bold text-primary-foreground shadow-pop">
+              cole o link → preenche!
+            </div>
+            <Panel texture className="p-3">
+              <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: "Aplicado", count: 3, color: "bg-[#fef3c7]" },
-                  { label: "Entrevista", count: 1, color: "bg-[#ede9fe]" },
-                  { label: "Oferta", count: 1, color: "bg-[#dcfce7]" },
+                  { label: "Aplicado", count: 3 },
+                  { label: "Entrevista", count: 1 },
+                  { label: "Oferta", count: 1 },
                 ].map((c) => (
-                  <div key={c.label} className={`rounded-xl border border-foreground p-2 ${c.color}`}>
-                    <div className="text-[10px] font-bold uppercase tracking-widest">{c.label}</div>
-                    <div className="text-lg font-extrabold">{c.count}</div>
+                  <div key={c.label} className="rounded-lg border bg-muted/50 p-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {c.label}
+                      </span>
+                      <span className="text-[10px] font-semibold text-muted-foreground">{c.count}</span>
+                    </div>
                     <div className="mt-2 space-y-1.5">
-                      <div className="h-10 rounded-lg bg-white border border-foreground/20" />
-                      <div className="h-10 rounded-lg bg-white border border-foreground/20" />
+                      <div className="h-9 rounded-md border bg-card shadow-sm" />
+                      <div className="h-9 rounded-md border bg-card shadow-sm" />
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 rounded-xl border-[1.5px] border-foreground bg-[#f7c948] p-3 shadow-[3px_3px_0_var(--foreground)] flex gap-2 items-center">
-                <span>⚡</span>
-                <p className="text-xs font-bold">7 dias sem retorno de Nubank — envie follow-up</p>
+              <div className="mt-3 flex items-center gap-2 rounded-lg border bg-[var(--st-applied-soft)] px-3 py-2">
+                <Zap className="h-3.5 w-3.5 text-[color:var(--st-applied)]" />
+                <p className="text-xs font-medium text-[color:var(--st-applied)]">
+                  7 dias sem retorno de Nubank — envie follow-up
+                </p>
               </div>
-            </div>
+            </Panel>
           </div>
-        </PaperSheet>
+        </section>
 
         {/* features */}
-        <div className="grid sm:grid-cols-3 gap-4">
+        <section className="grid gap-4 sm:grid-cols-3">
           {[
-            { icon: Kanban, title: "Kanban caderno", desc: "5 colunas: Aplicado → Encerrado. Visual de post-its, nada de tabela chata.", color: "bg-[#dbeafe]" },
-            { icon: Sparkles, title: "Cole link → IA extrai", desc: "LinkedIn/Gupy/Greenhouse. Já preenche empresa, cargo e requisitos.", color: "bg-[#fef3c7]" },
-            { icon: BellRing, title: "Lembrete 7 dias", desc: "Sem retorno? Aviso amarelo no card. Chega de esquecer follow-up.", color: "bg-[#fce7f3]" },
+            { icon: Kanban, title: "Kanban de 5 etapas", desc: "Aplicado → Encerrado. Visual de board, nada de tabela chata." },
+            { icon: Sparkles, title: "Cole link → IA extrai", desc: "LinkedIn/Gupy/Greenhouse. Já preenche empresa, cargo e requisitos." },
+            { icon: BellRing, title: "Lembrete de 7 dias", desc: "Sem retorno? Aviso no card. Chega de esquecer follow-up." },
           ].map((f) => (
-            <PaperSheet key={f.title} className={`p-5 ${f.color}`} withMargin={false} ruled={false}>
-              <div className="w-9 h-9 rounded-xl bg-white border-[1.5px] border-foreground grid place-items-center shadow-[2px_2px_0_var(--foreground)]">
-                <f.icon className="w-4 h-4" />
+            <Panel key={f.title} className="p-5">
+              <div className="grid h-9 w-9 place-items-center rounded-lg border bg-secondary">
+                <f.icon className="h-4 w-4" />
               </div>
-              <h3 className="font-extrabold mt-3">{f.title}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{f.desc}</p>
-            </PaperSheet>
+              <h3 className="mt-3 text-sm font-semibold">{f.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
+            </Panel>
           ))}
-        </div>
+        </section>
 
-        {/* pricing teaser */}
-        <PaperSheet className="p-6 sm:p-8" withMargin={false} ruled={false}>
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="hand text-lg rotate-[-1deg]">próximos passos</span>
-            <span className="text-xs font-bold bg-foreground text-white rounded-full px-2.5 py-1">pago depois</span>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-3 mt-4 text-sm">
-            <div className="rounded-xl bg-white border border-foreground p-3">
-              <div className="font-bold">Score real de compatibilidade</div>
-              <div className="text-muted-foreground text-xs mt-1">CV vs requisitos — gap específico, não score genérico.</div>
+        {/* next steps */}
+        <section>
+          <Panel className="p-6 sm:p-8">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="hand rotate-[-1deg] text-lg">próximos passos</span>
+              <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                pago depois
+              </span>
             </div>
-            <div className="rounded-xl bg-white border border-foreground p-3">
-              <div className="font-bold">Follow-up com IA</div>
-              <div className="text-muted-foreground text-xs mt-1">Rascunho contextual por empresa/cargo/tempo.</div>
+            <div className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+              {[
+                { title: "Score de compatibilidade", desc: "CV vs requisitos — gap específico, não score genérico." },
+                { title: "Follow-up com IA", desc: "Rascunho contextual por empresa, cargo e tempo." },
+                { title: "Analytics do funil", desc: "Taxa por tipo de vaga, por CV e tempo até resposta." },
+              ].map((s) => (
+                <div key={s.title} className="rounded-lg border bg-muted/40 p-4">
+                  <div className="font-semibold">{s.title}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{s.desc}</div>
+                </div>
+              ))}
             </div>
-            <div className="rounded-xl bg-white border border-foreground p-3">
-              <div className="font-bold">Analytics do funil</div>
-              <div className="text-muted-foreground text-xs mt-1">Taxa por tipo de vaga, por CV, tempo até resposta.</div>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <Link to="/app">
+                <Button className="gap-2">
+                  <NotebookPen className="h-4 w-4" /> testar grátis agora
+                </Button>
+              </Link>
+              <span className="hand rotate-[-1deg] text-sm text-muted-foreground">
+                → sem automação que queima seu nome
+              </span>
             </div>
-          </div>
-          <div className="mt-6 flex gap-3">
-            <Link to="/app">
-              <Button className="gap-2">
-                <NotebookPen className="w-4 h-4" /> testar grátis agora
-              </Button>
-            </Link>
-            <span className="hand text-sm self-center rotate-[-1deg]">→ sem automação que queima seu nome</span>
-          </div>
-        </PaperSheet>
+          </Panel>
+        </section>
 
-        <div className="text-center text-xs text-muted-foreground py-4">© 2026 Vagalume — seu caderno de vagas. Feito para quem aplica toda semana.</div>
+        <footer className="pb-4 text-center text-xs text-muted-foreground">
+          © 2026 Vagalume — seu caderno de vagas. Feito para quem aplica toda semana.
+        </footer>
       </main>
     </div>
   )

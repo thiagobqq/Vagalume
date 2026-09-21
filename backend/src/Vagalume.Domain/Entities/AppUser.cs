@@ -9,4 +9,5 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<Candidatura> Candidaturas { get; set; } = new List<Candidatura>();
     public ICollection<Curriculo> Curriculos { get; set; } = new List<Curriculo>();
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+    public ICollection<UsuarioPermissao> Permissoes { get; set; } = new List<UsuarioPermissao>();
 }
