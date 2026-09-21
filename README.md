@@ -1,11 +1,11 @@
 # Vagalume — Rastreador de vagas (caderno)
 
-Monorepo com **backend .NET 10 + SQL Server** e **frontend React 19 + Vite + Tailwind** estilizado como caderno.
+Monorepo com **backend .NET 10 + PostgreSQL** e **frontend React 19 + Vite + Tailwind** estilizado como caderno.
 
 ## Stack
-- **Backend** `backend/`: .NET 10, EF Core, Identity + JWT + Refresh rotativo, SQL Server 2022, Docker, Swagger, envelope `GenericResponseData<T>`
+- **Backend** `backend/`: .NET 10, EF Core, Identity + JWT + Refresh rotativo, PostgreSQL 16, Docker, Swagger, envelope `GenericResponseData<T>`
 - **Frontend** `frontend/`: React 19, React Router 7, Vite 8, Tailwind 4, shadcn/new-york, autenticação real, kanban 5 colunas, currículos PDF
-- **Infra**: Docker Compose com 3 serviços (sqlserver + api + frontend via nginx proxy)
+- **Infra**: Docker Compose com 3 serviços (postgres + api + frontend via nginx proxy)
 
 ## Rodar tudo com Docker (recomendado — compose geral)
 
@@ -13,13 +13,13 @@ Na **raiz** `Vagalume/`:
 
 ```bash
 cp .env.example .env
-# ajuste portas se precisar (FRONTEND_PORT, API_PORT, SQLSERVER_PORT)
+# ajuste portas se precisar (FRONTEND_PORT, API_PORT, POSTGRES_PORT)
 docker compose up --build
 ```
 
 - Frontend: http://localhost:3000 (nginx serve `dist` + proxy `/api` → `api:8080`)
 - API: http://localhost:5000/swagger (Development)
-- SQL Server: localhost:1433 (sa / Vagalume@123)
+- PostgreSQL: localhost:5432 (vagalume / Vagalume@123)
 
 Também funciona a partir de `backend/`:
 ```bash
@@ -31,8 +31,10 @@ docker compose up --build
 
 ### Variáveis (.env na raiz ou backend/.env)
 ```
-SA_PASSWORD=Vagalume@123
-SQLSERVER_PORT=1433
+POSTGRES_USER=vagalume
+POSTGRES_PASSWORD=Vagalume@123
+POSTGRES_DB=vagalume
+POSTGRES_PORT=5432
 API_PORT=5000
 FRONTEND_PORT=3000
 JWT_KEY=chave-super-secreta-de-32-caracteres!!-vagalume-dev
@@ -41,9 +43,9 @@ VITE_API_URL=   # vazio = usa proxy /api (recomendado no docker)
 
 ## Rodar em dev sem Docker
 
-**Backend** (precisa SQL Server externo):
+**Backend** (precisa PostgreSQL externo):
 ```bash
-export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=Vagalume;User Id=sa;Password=Vagalume@123;TrustServerCertificate=True"
+export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123"
 dotnet run --project backend/src/Vagalume.Api
 ```
 
@@ -59,7 +61,7 @@ npm run dev  # http://localhost:5173 — vite proxy /api → http://localhost:50
 ## Estrutura
 ```
 Vagalume/
-├── docker-compose.yml      # compose geral (sqlserver + api + frontend)
+├── docker-compose.yml      # compose geral (postgres + api + frontend)
 ├── .env.example
 ├── backend/                # .NET API (ver backend/README.md)
 │   ├── src/Vagalume.Api/

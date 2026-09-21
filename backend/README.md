@@ -5,8 +5,8 @@ Backend da **Fatia 1** do Vagalume (rastreador de vagas) conforme ADRs em `docs/
 ## Stack (ADR-0001)
 - .NET 10 (`net10.0`), C# 
 - 4 projetos: `Vagalume.Domain`, `Vagalume.Application`, `Vagalume.Infra`, `Vagalume.Api` (Controllers, não Minimal API)
-- SQL Server 2022 + EF Core + Identity
-- Docker Compose (`sqlserver` + `api`, healthcheck, volumes, migrations no startup)
+- PostgreSQL 16 + EF Core (`Npgsql`) + Identity
+- Docker Compose (`postgres` + `api`, healthcheck, volumes, migrations no startup)
 - DotNetEnv + variáveis de ambiente
 
 ## Escopo Fatia 1 (ADR-0003)
@@ -56,9 +56,9 @@ backend/
 - `EventoTransicaoCandidatura`: `StatusAnterior?`, `StatusNovo`, `Observacao?`, `CriadoEm` — transação atômica com `Candidatura.Status`
 - `Curriculo`: `NomeArquivoOriginal`, `CaminhoArmazenado` (`{usuarioId}/{guid}.pdf`), `TamanhoBytes`, `Ativo`, `CriadoEm` — upload desativa anterior mesma transação
 
-## Rodar local (sem Docker, precisa SQL Server)
+## Rodar local (sem Docker, precisa PostgreSQL)
 ```bash
-export ConnectionStrings__DefaultConnection="Server=localhost,1435;Database=Vagalume;User Id=sa;Password=Vagalume@123;TrustServerCertificate=True"
+export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123"
 export Uploads__BasePath="/tmp/vagalume_uploads"
 dotnet run --project src/Vagalume.Api
 # Swagger: http://localhost:5000/swagger
@@ -74,10 +74,10 @@ cp .env.example .env
 docker compose up --build
 # api: http://localhost:5000/swagger
 # frontend: http://localhost:3000 (nginx + proxy /api → api:8080)
-# sqlserver: localhost:1433 (ou 1435)
+# postgres: localhost:5432 (vagalume / Vagalume@123)
 ```
 
-`docker-compose.yml`: `sqlserver` com healthcheck `sqlcmd`, volume `sqlserver_data`, `api` depende `service_healthy`, `frontend` (nginx) depende `api`, volume `uploads_data:/app/uploads`. O `docker-compose.yml` da **raiz** (`../docker-compose.yml`) é o compose geral canônico — `backend/docker-compose.yml` espelha o mesmo stack com `context: ../frontend` para rodar de dentro de `backend/`.
+`docker-compose.yml`: `postgres` com healthcheck `pg_isready`, volume `postgres_data`, `api` depende `service_healthy`, `frontend` (nginx) depende `api`, volume `uploads_data:/app/uploads`. O `docker-compose.yml` da **raiz** (`../docker-compose.yml`) é o compose geral canônico — `backend/docker-compose.yml` espelha o mesmo stack com `context: ../frontend` para rodar de dentro de `backend/`.
 
 Migrations são aplicadas no startup (`db.Database.Migrate()`).
 

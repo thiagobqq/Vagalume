@@ -1,21 +1,21 @@
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: vagalume-sqlserver
+  postgres:
+    image: postgres:16-alpine
+    container_name: vagalume-postgres
     environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: "${SA_PASSWORD:-Vagalume@123}"
-      MSSQL_PID: "Developer"
+      POSTGRES_USER: "${POSTGRES_USER:-vagalume}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-Vagalume@123}"
+      POSTGRES_DB: "${POSTGRES_DB:-vagalume}"
     ports:
-      - "${SQLSERVER_PORT:-1435}:1433"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P ${SA_PASSWORD:-Vagalume@123} -Q 'SELECT 1' -C"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vagalume} -d ${POSTGRES_DB:-vagalume}"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 10s
     networks:
       - vagalume
 
@@ -26,7 +26,7 @@ services:
     container_name: vagalume-api
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=Vagalume;User Id=sa;Password=${SA_PASSWORD:-Vagalume@123};TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-vagalume};Username=${POSTGRES_USER:-vagalume};Password=${POSTGRES_PASSWORD:-Vagalume@123}"
       Jwt__Key: "${JWT_KEY:-chave-super-secreta-de-32-caracteres!!-vagalume-dev}"
       Jwt__Issuer: "${JWT_ISSUER:-vagalume}"
       Jwt__Audience: "${JWT_AUDIENCE:-vagalume}"
@@ -36,7 +36,7 @@ services:
     volumes:
       - uploads_data:/app/uploads
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
     networks:
       - vagalume
@@ -56,7 +56,7 @@ services:
       - vagalume
 
 volumes:
-  sqlserver_data:
+  postgres_data:
   uploads_data:
 
 networks:

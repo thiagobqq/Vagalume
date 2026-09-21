@@ -52,6 +52,6 @@ Termos de domínio do backend do Analista de Busca de Emprego. Definições norm
 
 **Base (Intranet)** — Codebase de referência do autor (`Intranet-backend`), do qual este projeto replica arquitetura e padrões: 4 projetos, Controllers, Identity, JWT+refresh, EF Core, DotNetEnv, Swagger. Não confundir: é referência, não dependência.
 
-**Volume de uploads** — Diretório `/app/uploads` montado como volume docker separado do volume de dados do SQL Server. Onde os PDFs vivem; o banco guarda só metadados. [ADR-0008]
+**Volume de uploads** — Diretório `/app/uploads` montado como volume docker separado do volume de dados do banco. Onde os PDFs vivem; o banco guarda só metadados. [ADR-0008]
 
-**VPS** — Destino de produção planejado; o docker-compose local já desenha o cenário (sqlserver + api + volumes + healthcheck). [ADR-0001]
+**VPS** — Destino de produção planejado; o docker-compose local já desenha o cenário (postgres + api + volumes + healthcheck). [ADR-0001]

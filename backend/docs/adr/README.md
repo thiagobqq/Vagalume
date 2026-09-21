@@ -21,3 +21,4 @@ Decisões de arquitetura do backend do Analista de Busca de Emprego. Cada ADR é
 | [0015](ADR-0015-pipeline-busca-automatica.md) | Pipeline de busca automática: fontes, filtros, agendamento e notificação | Aceito |
 | [0016](ADR-0016-fontes-brasileiras-e-scraping.md) | Fontes brasileiras e scraping (complementa o ADR-0015) | Aceito |
 | [0017](ADR-0017-execucao-busca-assincrona.md) | Execução de busca assíncrona (fila + 202 + polling) | Aceito |
+| [0018](ADR-0018-postgresql-no-lugar-do-sqlserver.md) | PostgreSQL no lugar do SQL Server (supersede o banco do ADR-0001) | Aceito |

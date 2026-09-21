@@ -15,7 +15,7 @@ public class VagaConfiguration : IEntityTypeConfiguration<Vaga>
         builder.Property(x => x.Localizacao).HasMaxLength(200);
         builder.Property(x => x.Url).IsRequired().HasMaxLength(2048);
         builder.Property(x => x.UrlNormalizada).IsRequired().HasMaxLength(2048);
-        builder.Property(x => x.Descricao).HasColumnType("nvarchar(max)");
+        builder.Property(x => x.Descricao);
         builder.Property(x => x.FonteNome).IsRequired().HasMaxLength(200);
         builder.Property(x => x.HashDedup).IsRequired().HasMaxLength(64);
 

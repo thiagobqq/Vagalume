@@ -28,7 +28,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Configuration from env
 var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
                     ?? builder.Configuration.GetConnectionString("DefaultConnection")
-                    ?? "Server=localhost,1433;Database=Vagalume;User Id=sa;Password=Vagalume@123;TrustServerCertificate=True";
+                    ?? "Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123";
 
 var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? builder.Configuration["Jwt:Key"] ?? "chave-super-secreta-de-32-caracteres!!";
 var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? builder.Configuration["Jwt:Issuer"] ?? "vagalume";
@@ -47,7 +47,7 @@ if (string.IsNullOrEmpty(builder.Configuration["Uploads:BasePath"]))
 
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseSqlServer(connectionString));
+    opts.UseNpgsql(connectionString));
 
 // Identity
 builder.Services.AddIdentity<AppUser, IdentityRole<Guid>>(opts =>
