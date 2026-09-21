@@ -2,6 +2,7 @@ import { AppShell } from "./components/app/app-shell"
 import { Landing } from "./pages/landing"
 import { Dashboard } from "./pages/dashboard"
 import { CurriculosPage } from "./pages/curriculos"
+import { VagasPage } from "./pages/vagas"
 import { AdminPage } from "./pages/admin"
 import { Login } from "./pages/login"
 import { Register } from "./pages/register"
@@ -28,6 +29,14 @@ export default function App() {
             >
               <Route index element={<Dashboard />} />
               <Route path="curriculos" element={<CurriculosPage />} />
+              <Route
+                path="vagas"
+                element={
+                  <ProtectedRoute permissao={PERMISSOES.buscaVagas}>
+                    <VagasPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="admin"
                 element={

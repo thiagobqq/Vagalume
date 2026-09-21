@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Vagalume.Api.Authorization;
+using Vagalume.Api.BackgroundServices;
 using Vagalume.Application.Common;
 using Vagalume.Domain.Abstractions;
 using Vagalume.Domain.Authorization;
@@ -16,6 +17,9 @@ using Vagalume.Domain.Enums;
 using Vagalume.Infra.Data;
 using Vagalume.Infra.Providers;
 using Vagalume.Infra.Services;
+using Vagalume.Infra.Services.Busca;
+using Vagalume.Infra.Services.Busca.Fontes;
+using Vagalume.Infra.Services.Busca.Notificacoes;
 
 Env.Load();
 
@@ -109,6 +113,35 @@ builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEntitlementService, EntitlementService>();
+
+// Busca automática de vagas
+var buscaUserAgent = builder.Configuration["Busca:UserAgent"] ?? "VagalumeBot/1.0";
+var buscaTimeout = builder.Configuration.GetValue("Busca:HttpTimeoutSegundos", 30);
+builder.Services.AddHttpClient(BuscaHttp.ClientName, client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(buscaTimeout, 5, 120));
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(buscaUserAgent);
+});
+
+builder.Services.AddScoped<DedupService>();
+builder.Services.AddScoped<FiltroVagaService>();
+builder.Services.AddScoped<FonteVagasFactory>();
+builder.Services.Configure<ScrapingOptions>(builder.Configuration.GetSection("Busca:Scraping"));
+builder.Services.AddScoped<IFonteVagas, GupyFonte>();
+builder.Services.AddScoped<IFonteVagas, TramposFonte>();
+builder.Services.AddScoped<IFonteVagas, ProgramathorFonte>();
+builder.Services.AddScoped<IFonteVagas, InfoJobsFonte>();
+builder.Services.AddScoped<IFonteVagas, CathoFonte>();
+builder.Services.AddScoped<IFonteVagas, RssFonte>();
+builder.Services.AddScoped<INotificadorBusca, NotificadorBusca>();
+builder.Services.AddScoped<IBuscaVagasService, ColetaVagasService>();
+
+// Execução assíncrona (fila + worker) e agendador
+builder.Services.AddSingleton<IBuscaQueue, BuscaQueue>();
+builder.Services.AddSingleton<BuscaExecucaoCoordinator>();
+builder.Services.AddScoped<BuscaEnfileirador>();
+builder.Services.AddHostedService<BuscaQueueHostedService>();
+builder.Services.AddHostedService<BuscaVagasHostedService>();
 
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(opts =>
@@ -223,6 +256,29 @@ using (var scope = app.Services.CreateScope())
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             logger.LogError(ex, "Erro ao semear admin de desenvolvimento");
         }
+    }
+
+    // execuções interrompidas por restart/crash não podem ficar "em andamento" para sempre
+    try
+    {
+        var orfas = await db.ExecucoesBusca.Where(e => e.FinalizadaEm == null).ToListAsync();
+        if (orfas.Count > 0)
+        {
+            var clock = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
+            var agora = clock.UtcNow;
+            foreach (var orfa in orfas)
+            {
+                orfa.Sucesso = false;
+                orfa.Erro = "Execução interrompida (reinício do serviço)";
+                orfa.FinalizadaEm = agora;
+            }
+            await db.SaveChangesAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Erro ao limpar execuções de busca órfãs");
     }
 }
 

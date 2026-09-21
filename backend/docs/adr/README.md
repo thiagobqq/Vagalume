@@ -17,3 +17,7 @@ Decisões de arquitetura do backend do Analista de Busca de Emprego. Cada ADR é
 | [0011](ADR-0011-envelope-de-resposta-consistente.md) | Envelope de resposta consistente `GenericResponseData<T>` | Aceito |
 | [0012](ADR-0012-contrato-api-fatia-1.md) | Contrato de API da fatia 1 | Aceito |
 | [0013](ADR-0013-autorizacao-por-permissoes.md) | Autorização por permissões (sem roles), preparada para paywall | Aceito |
+| [0014](ADR-0014-vaga-e-inbox-de-descoberta.md) | Vaga como entidade e inbox de descoberta (revê o ADR-0004) | Aceito |
+| [0015](ADR-0015-pipeline-busca-automatica.md) | Pipeline de busca automática: fontes, filtros, agendamento e notificação | Aceito |
+| [0016](ADR-0016-fontes-brasileiras-e-scraping.md) | Fontes brasileiras e scraping (complementa o ADR-0015) | Aceito |
+| [0017](ADR-0017-execucao-busca-assincrona.md) | Execução de busca assíncrona (fila + 202 + polling) | Aceito |

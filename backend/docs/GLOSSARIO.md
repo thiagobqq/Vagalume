@@ -8,7 +8,7 @@ Termos de domínio do backend do Analista de Busca de Emprego. Definições norm
 
 **Candidatura** — O registro central do produto: *a aplicação de um usuário a uma vaga*. Não confundir com Vaga. É flat: carrega ela mesma empresa, cargo, link, origem e observações. Nasce sempre com status `Aplicado`. [ADR-0004, ADR-0005]
 
-**Vaga** — Conceito do produto (a oportunidade em si), **mas não é entidade de banco na fatia 1**. Os dados da vaga vivem como campos de texto dentro da Candidatura. Usar "vaga" e "candidatura" como sinônimos em código é erro. [ADR-0004]
+**Vaga** — A oportunidade em si, agora uma **entidade própria** (`Vaga`), distinta de Candidatura. Nasce da busca automática e vive na inbox até o usuário aplicar. Tem título, empresa, localização, modalidade, nível, URL, descrição, fonte, status próprio (`Nova, Vista, Aplicada, Descartada`) e vínculo opcional com a candidatura. Usar "vaga" e "candidatura" como sinônimos em código é erro. [ADR-0004 revisto por ADR-0014]
 
 **Status** — A coluna do kanban em que uma candidatura está: `Aplicado, Triagem, Entrevista, Oferta, Encerrado`. É o valor corrente, denormalizado na Candidatura. [ADR-0005]
 
@@ -22,11 +22,25 @@ Termos de domínio do backend do Analista de Busca de Emprego. Definições norm
 
 **Currículo Ativo** — O currículo que o sistema considera "o atual" do usuário; alvo das features futuras de comparação (gap-analysis). Invariante: um e apenas um ativo por usuário. [ADR-0008]
 
+**Fonte de Busca** — Origem de vagas configurada pelo usuário (`FonteBusca`): tipo (`Gupy, Trampos, Programathor, InfoJobs, Catho, Rss`), identificador opcional (Gupy = slug de empresa; RSS = URL do feed), nome da empresa opcional e ativo/inativo. Gupy e Trampos usam APIs públicas; Programathor/InfoJobs/Catho usam scraping HTML; RSS é genérico. [ADR-0015, ADR-0016]
+
+**Perfil de Busca** — Critérios e agenda do usuário para a busca automática (`PerfilBusca`): palavras-chave, tecnologias, níveis, modalidades, exclusões, localização, como combinar os termos (`Qualquer`/`Todos`), hora e dias de execução, fuso e webhook do Discord. [ADR-0015]
+
+**Execução de Busca** — Registro de uma rodada de coleta (`ExecucaoBusca`) com as métricas: encontradas, aprovadas, duplicadas, adicionadas, além de erro/detalhe por fonte. Base do card "última busca". [ADR-0015]
+
+**Inbox "Novas"** — A lista de vagas descobertas com status `Nova`. É a "coluna Novas" do produto; não é uma coluna do kanban de candidaturas (que nasce em `Aplicado`). [ADR-0014]
+
+**Deduplicação de Vaga** — Impede gravar a mesma vaga duas vezes para o mesmo usuário, por URL normalizada (sem parâmetros de rastreio) e por hash de `empresa|título|localização`. Índices únicos garantem a invariante no banco. [ADR-0014]
+
+**Busca automática** — Coleta periódica de vagas em fontes configuradas, com normalização, filtragem pelos critérios, deduplicação, persistência e notificação opcional. Fontes brasileiras (portais e tech), algumas via API e outras via scraping. Substitui a antiga "extração automática" adiada no ADR-0003. [ADR-0014, ADR-0015, ADR-0016]
+
+**Scraping** — Leitura de HTML público de portais sem API (Programathor, InfoJobs, Catho) com AngleSharp, rate-limit conservador e User-Agent de navegador (portais com WAF bloqueiam UA de bot). Provedores isolados: falha de um site não derruba a execução. [ADR-0016]
+
 ## Escopo e processo
 
 **Fatia 1** — Primeira entrega de ponta a ponta: auth + kanban de candidaturas + upload de currículos. Tudo fora disso (extração por URL, follow-ups, gap-analysis, prep de entrevista, métricas, pagamentos, exclusões) está explicitamente adiado. [ADR-0003]
 
-**Extração automática** — Feature futura: ler a página de uma vaga pelo link e preencher os campos da candidatura. Não existe na fatia 1; maior risco técnico do produto. [ADR-0003, ADR-0004]
+**Extração automática** — Leitura/coleta de dados de vaga sem digitação manual. Implementada como **busca automática** (ver acima): coleta em fontes configuradas e preenche a Vaga. [ADR-0014, ADR-0015]
 
 **Gap-analysis** — Feature futura (paga): comparar requisitos da candidatura com o currículo ativo, apontando lacunas específicas. Depende de parse do PDF. [ADR-0008]
 

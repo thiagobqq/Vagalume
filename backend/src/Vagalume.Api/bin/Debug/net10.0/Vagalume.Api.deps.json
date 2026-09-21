@@ -20,6 +20,14 @@
           "Vagalume.Api.dll": {}
         }
       },
+      "AngleSharp/1.8.2": {
+        "runtime": {
+          "lib/net10.0/AngleSharp.dll": {
+            "assemblyVersion": "1.8.2.0",
+            "fileVersion": "1.8.2.0"
+          }
+        }
+      },
       "Azure.Core/1.47.1": {
         "dependencies": {
           "Microsoft.Bcl.AsyncInterfaces": "8.0.0",
@@ -1083,6 +1091,7 @@
       },
       "Vagalume.Infra/1.0.0": {
         "dependencies": {
+          "AngleSharp": "1.8.2",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "10.0.0",
           "Microsoft.EntityFrameworkCore.SqlServer": "10.0.0",
           "Vagalume.Application": "1.0.0",
@@ -1102,6 +1111,13 @@
       "type": "project",
       "serviceable": false,
       "sha512": ""
+    },
+    "AngleSharp/1.8.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-iRlkfBIhi+gTgTxBlYNT4PlmaiVEy7+qX3BmprAK4cYE1UjfSNFI4mEDyxC1qgtAKYg5rjGYgL3tJlzGF+Ukdg==",
+      "path": "anglesharp/1.8.2",
+      "hashPath": "anglesharp.1.8.2.nupkg.sha512"
     },
     "Azure.Core/1.47.1": {
       "type": "package",

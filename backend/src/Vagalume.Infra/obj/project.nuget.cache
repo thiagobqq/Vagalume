@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "E5supDxf+F8=",
+  "dgSpecHash": "siSNRll6OM8=",
   "success": true,
   "projectFilePath": "/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Infra/Vagalume.Infra.csproj",
   "expectedPackageFiles": [
+    "/home/thiago/.nuget/packages/anglesharp/1.8.2/anglesharp.1.8.2.nupkg.sha512",
     "/home/thiago/.nuget/packages/azure.core/1.47.1/azure.core.1.47.1.nupkg.sha512",
     "/home/thiago/.nuget/packages/azure.identity/1.14.2/azure.identity.1.14.2.nupkg.sha512",
     "/home/thiago/.nuget/packages/humanizer.core/2.14.1/humanizer.core.2.14.1.nupkg.sha512",

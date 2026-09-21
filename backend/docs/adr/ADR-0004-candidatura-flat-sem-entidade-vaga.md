@@ -1,6 +1,6 @@
 # ADR-0004 — Candidatura flat: sem entidade Vaga na fatia 1
 
-**Status:** Aceito (2026-08-25)
+**Status:** Aceito (2026-08-25) · **Revisto por:** [ADR-0014](ADR-0014-vaga-e-inbox-de-descoberta.md)
 
 ## Contexto
 

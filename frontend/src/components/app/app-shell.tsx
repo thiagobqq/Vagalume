@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/features/auth/auth-context"
 import { PERMISSOES } from "@/features/auth/permissoes"
-import { Kanban, FileText, LogOut, Menu, X, Sparkles, ShieldCheck } from "lucide-react"
+import { Kanban, FileText, LogOut, Menu, X, Sparkles, ShieldCheck, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV = [
   { to: "/app", label: "Candidaturas", icon: Kanban, end: true, permissao: undefined },
+  { to: "/app/vagas", label: "Busca de vagas", icon: Zap, end: false, permissao: PERMISSOES.buscaVagas },
   { to: "/app/curriculos", label: "Currículos", icon: FileText, end: false, permissao: undefined },
   { to: "/app/admin", label: "Permissões", icon: ShieldCheck, end: false, permissao: PERMISSOES.admin },
 ]

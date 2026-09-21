@@ -10,4 +10,8 @@ public class AppUser : IdentityUser<Guid>
     public ICollection<Curriculo> Curriculos { get; set; } = new List<Curriculo>();
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     public ICollection<UsuarioPermissao> Permissoes { get; set; } = new List<UsuarioPermissao>();
+    public ICollection<Vaga> Vagas { get; set; } = new List<Vaga>();
+    public ICollection<FonteBusca> FontesBusca { get; set; } = new List<FonteBusca>();
+    public ICollection<ExecucaoBusca> ExecucoesBusca { get; set; } = new List<ExecucaoBusca>();
+    public PerfilBusca? PerfilBusca { get; set; }
 }

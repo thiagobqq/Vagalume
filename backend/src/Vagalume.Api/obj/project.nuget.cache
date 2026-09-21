@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "pKKr8aaJKFg=",
+  "dgSpecHash": "LbmjYIarZ1I=",
   "success": true,
   "projectFilePath": "/home/thiago/Documentos/GitHub/Vagalume/backend/src/Vagalume.Api/Vagalume.Api.csproj",
   "expectedPackageFiles": [
+    "/home/thiago/.nuget/packages/anglesharp/1.8.2/anglesharp.1.8.2.nupkg.sha512",
     "/home/thiago/.nuget/packages/azure.core/1.47.1/azure.core.1.47.1.nupkg.sha512",
     "/home/thiago/.nuget/packages/azure.identity/1.14.2/azure.identity.1.14.2.nupkg.sha512",
     "/home/thiago/.nuget/packages/dotnetenv/3.1.1/dotnetenv.3.1.1.nupkg.sha512",

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Vagalume.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+496ca0d04c84b9456300fecd5d4b822f7ff00ec0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+086cde642264e365c082092abcfce4c7102e8566")]
 [assembly: System.Reflection.AssemblyProductAttribute("Vagalume.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Vagalume.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

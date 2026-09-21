@@ -345,6 +345,165 @@ namespace Vagalume.Infra.Data.Migrations
                     b.ToTable("EventosTransicao");
                 });
 
+            modelBuilder.Entity("Vagalume.Domain.Entities.ExecucaoBusca", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Adicionadas")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Aprovadas")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DetalhesPorFonte")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Duplicadas")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Encontradas")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Erro")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("FinalizadaEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("IniciadaEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool?>("Sucesso")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "IniciadaEm");
+
+                    b.ToTable("ExecucoesBusca");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.FonteBusca", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Identificador")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Nome")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NomeEmpresa")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("FontesBusca");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.PerfilBusca", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Combina")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DiasSemana")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<string>("DiscordWebhookUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ExcluirPalavras")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FusoHorario")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<TimeOnly>("HoraExecucao")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Localizacao")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Modalidades")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Niveis")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PalavrasChave")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Tecnologias")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UltimaExecucaoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique();
+
+                    b.ToTable("PerfisBusca");
+                });
+
             modelBuilder.Entity("Vagalume.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -416,6 +575,98 @@ namespace Vagalume.Infra.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("UsuarioPermissoes");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.Vaga", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CandidaturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descricao")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Empresa")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FonteNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FonteTipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("HashDedup")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Localizacao")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Modalidade")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Nivel")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("PublicadaEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("UrlNormalizada")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidaturaId");
+
+                    b.HasIndex("UsuarioId", "CriadoEm");
+
+                    b.HasIndex("UsuarioId", "HashDedup")
+                        .IsUnique();
+
+                    b.HasIndex("UsuarioId", "Status");
+
+                    b.HasIndex("UsuarioId", "UrlNormalizada")
+                        .IsUnique();
+
+                    b.ToTable("Vagas");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -502,6 +753,39 @@ namespace Vagalume.Infra.Data.Migrations
                     b.Navigation("Candidatura");
                 });
 
+            modelBuilder.Entity("Vagalume.Domain.Entities.ExecucaoBusca", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
+                        .WithMany("ExecucoesBusca")
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.FonteBusca", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
+                        .WithMany("FontesBusca")
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.PerfilBusca", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
+                        .WithOne("PerfilBusca")
+                        .HasForeignKey("Vagalume.Domain.Entities.PerfilBusca", "UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Vagalume.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
@@ -524,15 +808,41 @@ namespace Vagalume.Infra.Data.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("Vagalume.Domain.Entities.Vaga", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.Candidatura", "Candidatura")
+                        .WithMany()
+                        .HasForeignKey("CandidaturaId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
+                        .WithMany("Vagas")
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Candidatura");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Vagalume.Domain.Entities.AppUser", b =>
                 {
                     b.Navigation("Candidaturas");
 
                     b.Navigation("Curriculos");
 
+                    b.Navigation("ExecucoesBusca");
+
+                    b.Navigation("FontesBusca");
+
+                    b.Navigation("PerfilBusca");
+
                     b.Navigation("Permissoes");
 
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("Vagas");
                 });
 
             modelBuilder.Entity("Vagalume.Domain.Entities.Candidatura", b =>

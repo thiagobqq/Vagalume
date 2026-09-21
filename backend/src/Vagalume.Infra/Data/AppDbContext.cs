@@ -14,6 +14,10 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
     public DbSet<Curriculo> Curriculos => Set<Curriculo>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UsuarioPermissao> UsuarioPermissoes => Set<UsuarioPermissao>();
+    public DbSet<Vaga> Vagas => Set<Vaga>();
+    public DbSet<FonteBusca> FontesBusca => Set<FonteBusca>();
+    public DbSet<PerfilBusca> PerfisBusca => Set<PerfilBusca>();
+    public DbSet<ExecucaoBusca> ExecucoesBusca => Set<ExecucaoBusca>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
