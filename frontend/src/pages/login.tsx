@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Panel } from "@/components/app/panel"
+import { LogoFull } from "@/components/app/logo"
 import { Sparkles, Loader2 } from "lucide-react"
 import { useAuth } from "@/features/auth/auth-context"
 
@@ -30,17 +31,13 @@ export function Login() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background p-4">
+    <div className="paper-texture grid min-h-screen place-items-center bg-background p-4">
       <div className="w-full max-w-[400px] space-y-5">
-        <Link to="/" className="flex items-center justify-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-[15px] leading-none text-primary-foreground shadow-sm">
-            ✦
-          </div>
-          <span className="font-extrabold tracking-tight">vagalume</span>
-          <span className="hand text-sm text-muted-foreground">caderno de vagas</span>
+        <Link to="/" className="flex justify-center">
+          <LogoFull className="max-w-[260px]" />
         </Link>
 
-        <Panel className="p-6 sm:p-7">
+        <Panel notebook tape className="p-6 sm:p-7">
           <h1 className="text-base font-semibold tracking-tight">entrar no seu caderno</h1>
           <p className="mt-1 text-sm text-muted-foreground">Use e-mail e senha cadastrados.</p>
 

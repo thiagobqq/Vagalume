@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LogoMark } from "@/components/app/logo"
 import { useAuth } from "@/features/auth/auth-context"
 import { LayoutDashboard, LogIn, Sparkles } from "lucide-react"
 
@@ -8,12 +9,10 @@ export function AppHeader() {
   const { isAuthenticated } = useAuth()
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b-[1.5px] border-ink bg-[var(--nb-paper)]/85 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-[15px] leading-none text-primary-foreground shadow-sm">
-            ✦
-          </div>
+          <LogoMark />
           <div className="leading-tight">
             <div className="text-sm font-extrabold tracking-tight">vagalume</div>
             <div className="text-[11px] font-medium text-muted-foreground">caderno de vagas</div>

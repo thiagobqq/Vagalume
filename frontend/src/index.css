@@ -23,85 +23,133 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-ink: var(--nb-ink);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-hand: "Caveat", cursive;
-  --shadow-card: var(--shadow-card);
-  --shadow-pop: var(--shadow-pop);
+  --shadow-card: var(--sh-card);
+  --shadow-pop: var(--sh-pop);
+  --shadow-hard: var(--sh-hard);
+  --shadow-hard-sm: var(--sh-hard-sm);
+  --shadow-hard-xs: var(--sh-hard-xs);
 }
 
 :root {
-  /* Vagalume — neutro claro + amarelo vagalume como acento */
-  --background: #fafafa;
-  --foreground: #09090b;
+  /* Vagalume — papel quente + tinta + amarelo vagalume */
+  --background: #fdf7ec;
+  --foreground: #1a1712;
   --card: #ffffff;
-  --card-foreground: #09090b;
+  --card-foreground: #1a1712;
   --popover: #ffffff;
-  --popover-foreground: #09090b;
-  --primary: #f7c948; /* amarelo vagalume */
+  --popover-foreground: #1a1712;
+  --primary: #f7c948;
   --primary-foreground: #1a1405;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --secondary: #f3ecdb;
+  --secondary-foreground: #1a1712;
+  --muted: #f3ecdb;
+  --muted-foreground: #6f6858;
+  --accent: #fbe6c4;
+  --accent-foreground: #1a1712;
   --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
+  --destructive-foreground: #fdf7ec;
+  --border: #ded5c1;
+  --input: #ded5c1;
   --ring: #f7c948;
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
-  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06);
-  --shadow-pop: 0 10px 38px -10px rgb(0 0 0 / 0.18), 0 10px 20px -15px rgb(0 0 0 / 0.12);
+  --sh-card: 0 1px 2px 0 rgb(26 23 18 / 0.05), 0 1px 3px 0 rgb(26 23 18 / 0.07);
+  --sh-pop: 0 10px 38px -10px rgb(26 23 18 / 0.2), 0 10px 20px -15px rgb(26 23 18 / 0.14);
 
-  /* essência caderno — sutil */
-  --paper-rule: color-mix(in srgb, var(--foreground) 5%, transparent);
-  --tape: color-mix(in srgb, var(--primary) 55%, #ffffff);
+  /* essência caderno */
+  --nb-paper: #fdf7ec;
+  --nb-card: #fffdf7;
+  --nb-ink: #1a1712;
+  --nb-shadow: #1a1712;
+  --nb-rule: color-mix(in srgb, var(--nb-ink) 8%, transparent);
+  --nb-rule-accent: color-mix(in srgb, var(--nb-ink) 5%, transparent);
+  --nb-tape: rgba(255, 255, 255, 0.55);
+  --sh-hard: 4px 4px 0 var(--nb-shadow);
+  --sh-hard-sm: 3px 3px 0 var(--nb-shadow);
+  --sh-hard-xs: 2px 2px 0 var(--nb-shadow);
+
+  /* cores giz (acentos) */
+  --crayon-yellow: #f7c948;
+  --crayon-yellow-soft: #fef3c7;
+  --crayon-pink: #f06292;
+  --crayon-pink-soft: #fce7f3;
+  --crayon-blue: #5b9bd5;
+  --crayon-blue-soft: #dbeafe;
+  --crayon-green: #4cb878;
+  --crayon-green-soft: #dcfce7;
+  --crayon-orange: #f4845f;
+  --crayon-orange-soft: #ffedd5;
+  --crayon-purple: #a78bfa;
+  --crayon-purple-soft: #ede9fe;
 
   /* status — dot + soft + texto */
   --st-applied: #b45309;
-  --st-applied-soft: #fffbeb;
+  --st-applied-soft: #fef3c7;
   --st-triage: #1d4ed8;
-  --st-triage-soft: #eff6ff;
+  --st-triage-soft: #dbeafe;
   --st-interview: #6d28d9;
-  --st-interview-soft: #f5f3ff;
+  --st-interview-soft: #ede9fe;
   --st-offer: #047857;
-  --st-offer-soft: #ecfdf5;
+  --st-offer-soft: #dcfce7;
   --st-closed: #be123c;
-  --st-closed-soft: #fff1f2;
+  --st-closed-soft: #fce7f3;
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #161619;
-  --card-foreground: #fafafa;
-  --popover: #1c1c1f;
-  --popover-foreground: #fafafa;
+  /* caderno noturno — lousa escura + giz */
+  --background: #14161b;
+  --foreground: #f3efe4;
+  --card: #1d2027;
+  --card-foreground: #f3efe4;
+  --popover: #23262e;
+  --popover-foreground: #f3efe4;
   --primary: #f7c948;
   --primary-foreground: #1a1405;
-  --secondary: #27272a;
-  --secondary-foreground: #fafafa;
-  --muted: #1f1f23;
-  --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
-  --destructive: #ef4444;
-  --destructive-foreground: #fafafa;
-  --border: #27272a;
-  --input: #27272a;
+  --secondary: #2a2d36;
+  --secondary-foreground: #f3efe4;
+  --muted: #22252d;
+  --muted-foreground: #a9a394;
+  --accent: #33291c;
+  --accent-foreground: #f3efe4;
+  --destructive: #f87171;
+  --destructive-foreground: #1a1405;
+  --border: #343843;
+  --input: #343843;
   --ring: #f7c948;
 
-  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.4), 0 1px 3px 0 rgb(0 0 0 / 0.5);
-  --shadow-pop: 0 10px 38px -10px rgb(0 0 0 / 0.7), 0 10px 20px -15px rgb(0 0 0 / 0.6);
+  --sh-card: 0 1px 2px 0 rgb(0 0 0 / 0.4), 0 1px 3px 0 rgb(0 0 0 / 0.5);
+  --sh-pop: 0 10px 38px -10px rgb(0 0 0 / 0.7), 0 10px 20px -15px rgb(0 0 0 / 0.6);
 
-  --paper-rule: color-mix(in srgb, var(--foreground) 7%, transparent);
-  --tape: color-mix(in srgb, var(--primary) 32%, #1c1c1f);
+  --nb-paper: #191c22;
+  --nb-card: #23272f;
+  --nb-ink: #f3efe4;
+  --nb-shadow: rgba(0, 0, 0, 0.6);
+  --nb-rule: color-mix(in srgb, var(--nb-ink) 7%, transparent);
+  --nb-rule-accent: color-mix(in srgb, var(--nb-ink) 5%, transparent);
+  --nb-tape: rgba(247, 201, 72, 0.16);
+  --sh-hard: 4px 4px 0 var(--nb-shadow);
+  --sh-hard-sm: 3px 3px 0 var(--nb-shadow);
+  --sh-hard-xs: 2px 2px 0 var(--nb-shadow);
+
+  --crayon-yellow: #fbbf24;
+  --crayon-yellow-soft: #2a1f0a;
+  --crayon-pink: #f472b6;
+  --crayon-pink-soft: #321620;
+  --crayon-blue: #60a5fa;
+  --crayon-blue-soft: #10203a;
+  --crayon-green: #34d399;
+  --crayon-green-soft: #0c2a20;
+  --crayon-orange: #fb923c;
+  --crayon-orange-soft: #311c0f;
+  --crayon-purple: #a78bfa;
+  --crayon-purple-soft: #221a3a;
 
   --st-applied: #fbbf24;
   --st-applied-soft: #2a1f0a;
@@ -133,34 +181,83 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* essência caderno — micro-textura pautada sutil */
+/* ───────── Essência caderno ───────── */
 .paper-texture {
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0,
     transparent 31px,
-    var(--paper-rule) 31px,
-    var(--paper-rule) 32px
+    var(--nb-rule) 31px,
+    var(--nb-rule) 32px
   );
   background-position: 0 4px;
+}
+
+.ruled-paper {
+  background-color: var(--nb-paper);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    var(--nb-rule) 27px,
+    var(--nb-rule) 28px
+  );
+  background-size: 100% 28px;
+}
+
+.spiral-holes {
+  background-image: radial-gradient(circle, var(--nb-ink) 5px, transparent 6px);
+  background-size: 28px 36px;
+  background-repeat: repeat-y;
+  background-position: center;
+  opacity: 0.18;
+}
+
+.tape {
+  background: var(--nb-tape);
+  backdrop-filter: blur(6px);
+  border: 1px solid color-mix(in srgb, var(--nb-ink) 10%, transparent);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
 }
 
 .hand {
   font-family: var(--font-hand);
 }
 
-/* grifo de marca */
+/* grifo de marca — traço desenhado à mão */
 .doodle-underline {
-  background-image: linear-gradient(
-    transparent 60%,
-    color-mix(in srgb, var(--primary) 75%, transparent) 60%
-  );
-  background-repeat: no-repeat;
-  padding: 0 0.12em;
-  border-radius: 2px;
+  position: relative;
+  display: inline-block;
+}
+.doodle-underline::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  bottom: -6px;
+  height: 10px;
+  background: url("data:image/svg+xml,%3Csvg width='100' height='10' viewBox='0 0 100 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 6 Q 15 1 30 6 T 60 6 T 98 5' stroke='%23f7c948' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E")
+    no-repeat;
+  background-size: 100% 100%;
+  opacity: 0.9;
 }
 
-/* scrollbar discreta */
+/* botão/cartão que "afunda" no papel */
+.pressable {
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+.pressable:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--nb-shadow) !important;
+}
+.pressable:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--nb-shadow) !important;
+}
+
+/* ───────── scrollbar discreta ───────── */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

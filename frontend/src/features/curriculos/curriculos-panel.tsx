@@ -47,7 +47,7 @@ export function CurriculosPanel() {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-card">
+    <div className="overflow-hidden rounded-xl border-[1.5px] border-ink bg-card shadow-hard">
       <div className="flex items-center justify-between gap-3 border-b bg-muted/30 px-5 py-3.5">
         <div>
           <h3 className="text-sm font-semibold">Seus currículos</h3>

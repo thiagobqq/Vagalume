@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Panel } from "@/components/app/panel"
 import { AppHeader } from "@/components/app/app-header"
+import { LogoFull } from "@/components/app/logo"
 import { Sparkles, NotebookPen, BellRing, Kanban, ArrowRight, Check, Zap } from "lucide-react"
 
 export function Landing() {
@@ -12,6 +13,7 @@ export function Landing() {
         {/* hero */}
         <section className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
+            <LogoFull className="mb-6 w-full max-w-[220px]" />
             <div className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
               <span className="h-2 w-2 rounded-full bg-primary" /> MVP gratuito no ar
             </div>
@@ -53,7 +55,7 @@ export function Landing() {
             <div className="hand absolute -top-3 right-4 z-10 rotate-3 rounded-md bg-primary px-3 py-1 text-base font-bold text-primary-foreground shadow-pop">
               cole o link → preenche!
             </div>
-            <Panel texture className="p-3">
+            <Panel texture notebook className="p-3">
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { label: "Aplicado", count: 3 },
@@ -91,7 +93,7 @@ export function Landing() {
             { icon: Sparkles, title: "Cole link → IA extrai", desc: "LinkedIn/Gupy/Greenhouse. Já preenche empresa, cargo e requisitos." },
             { icon: BellRing, title: "Lembrete de 7 dias", desc: "Sem retorno? Aviso no card. Chega de esquecer follow-up." },
           ].map((f) => (
-            <Panel key={f.title} className="p-5">
+            <Panel key={f.title} notebook className="p-5">
               <div className="grid h-9 w-9 place-items-center rounded-lg border bg-secondary">
                 <f.icon className="h-4 w-4" />
               </div>
@@ -103,7 +105,7 @@ export function Landing() {
 
         {/* next steps */}
         <section>
-          <Panel className="p-6 sm:p-8">
+          <Panel notebook tape className="p-6 sm:p-8">
             <div className="flex flex-wrap items-center gap-3">
               <span className="hand rotate-[-1deg] text-lg">próximos passos</span>
               <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">

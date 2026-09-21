@@ -4,15 +4,18 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-[transform,box-shadow,background-color,border-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/85 active:bg-primary/75",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/70",
-        outline: "border bg-card text-foreground hover:bg-accent hover:text-accent-foreground",
-        ghost: "text-foreground/80 hover:bg-accent hover:text-accent-foreground",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        default:
+          "border-[1.5px] border-ink bg-primary text-primary-foreground shadow-hard-xs hover:bg-primary/85 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+        secondary: "border-[1.5px] border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/70",
+        outline:
+          "border-[1.5px] border-ink bg-card text-foreground shadow-hard-xs hover:bg-accent hover:text-accent-foreground active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+        ghost: "border-transparent text-foreground/80 hover:bg-accent hover:text-accent-foreground",
+        destructive:
+          "border-[1.5px] border-ink bg-destructive text-destructive-foreground shadow-hard-xs hover:bg-destructive/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
         link: "text-foreground underline-offset-4 hover:underline",
       },
       size: {
