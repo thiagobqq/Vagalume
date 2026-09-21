@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react"
 import { PageHeader } from "@/components/app/page-header"
 import { Panel } from "@/components/app/panel"
 import { NotebookCard, NotebookPanel } from "@/components/app/notebook-panel"
-import { PostItStat } from "@/components/app/post-it"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 import { useVagas } from "@/hooks/use-vagas"
 import { useBuscaConfig } from "@/hooks/use-busca"
 import { useAplicacaoPendente } from "@/hooks/use-aplicacao-pendente"
@@ -68,14 +68,37 @@ function Metricas({ execucao }: { execucao: ExecucaoBuscaDto | null }) {
     { label: "Novas", valor: execucao?.adicionadas ?? 0, color: "var(--crayon-purple)" },
   ]
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {itens.map((i) => (
-          <PostItStat key={i.label} label={i.label} value={i.valor} color={i.color} />
+    <NotebookPanel
+      title="Última busca"
+      badge={
+        execucao?.finalizadaEm ? (
+          <span className="text-xs text-muted-foreground">
+            {new Date(execucao.finalizadaEm).toLocaleString("pt-BR")}
+          </span>
+        ) : undefined
+      }
+    >
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        {itens.map((i, idx) => (
+          <div
+            key={i.label}
+            className={cn(
+              "flex items-center gap-2",
+              idx > 0 && "sm:border-l sm:border-ink/10 sm:pl-6"
+            )}
+          >
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ background: `color-mix(in srgb, ${i.color} 55%, var(--muted-foreground))` }}
+              aria-hidden="true"
+            />
+            <span className="text-sm font-bold tabular-nums">{i.valor}</span>
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{i.label}</span>
+          </div>
         ))}
       </div>
       {execucao?.detalhesPorFonte?.some((d) => !d.sucesso) && (
-        <div className="space-y-1">
+        <div className="mt-3 space-y-1">
           {execucao.detalhesPorFonte.filter((d) => !d.sucesso).map((d) => (
             <div key={d.fonteNome} className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {d.fonteNome}: {d.erro ?? "falha na coleta"}
@@ -83,7 +106,7 @@ function Metricas({ execucao }: { execucao: ExecucaoBuscaDto | null }) {
           ))}
         </div>
       )}
-    </div>
+    </NotebookPanel>
   )
 }
 
