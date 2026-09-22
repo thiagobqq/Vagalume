@@ -17,7 +17,7 @@ namespace Vagalume.Api.Controllers;
 
 [ApiController]
 [Route("api/ia")]
-[Authorize(Policy = Permissoes.Compatibilidade)]
+[Authorize(Policy = Permissoes.VerifyUser)]
 public class IaController : ControllerBase
 {
     private readonly AppDbContext _db;

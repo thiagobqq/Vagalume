@@ -10,7 +10,8 @@ Autorização de "quem pode acessar" não é a mesma coisa que "quem pagou". Tra
 
 ## Decisão
 
-- **Autorização por permissões (entitlements) por usuário, sem roles.** Uma permissão é uma chave string (`Permissoes` em `Vagalume.Domain/Authorization/Permissoes.cs`), ex.: `admin`, `busca_vagas.acesso`.
+- **Autorização por permissões (entitlements) por usuário, sem roles.** Uma permissão é uma chave string (`Permissoes` em `Vagalume.Domain/Authorization/Permissoes.cs`), ex.: `admin`, `verify_user`.
+- **`verify_user` unifica busca e compatibilidade.** As antigas chaves `busca_vagas.acesso` e `gap_analysis.acesso` foram substituídas por `verify_user`, que governa o módulo de busca de vagas (`/api/busca`, `/api/vagas`) e a análise de compatibilidade/IA (`/api/vagas/{id}/compatibilidade`, `/api/ia/*`). Não há backfill: concessões antigas são removidas e os usuários precisam receber `verify_user` manualmente.
 - **Persistência** na entidade `UsuarioPermissao` (`Chave`, `ConcedidoEm`, `ConcedidoPorUsuarioId`, `ExpiraEm`, `Origem`), com índice único `(UsuarioId, Chave)`.
 - **`Origem` (`Manual`/`Assinatura`) e `ExpiraEm` desde já** — o seam para o paywall. Hoje a concessão é manual via tela de admin; na fatia de pagamentos, o webhook do provedor materializa/remove linhas com `Origem = Assinatura` e `ExpiraEm`, **sem alterar controllers**.
 - **Admin é uma permissão (`admin`), não um role.** A tela de gestão de permissões (`/app/admin`, API `/api/admin`) é protegida por ela.
@@ -21,7 +22,7 @@ Autorização de "quem pode acessar" não é a mesma coisa que "quem pagou". Tra
 
 ## Consequências
 
-- O módulo novo é liberado concedendo `busca_vagas.acesso`; nada de role/Identity é tocado.
+- Os módulos de busca de vagas e análise de compatibilidade são liberados concedendo `verify_user`; nada de role/Identity é tocado.
 - O paywall entra como nova implementação de `IEntitlementService` + entidade de assinatura, sem reescrever a proteção das rotas.
 - `AspNetRoles`/`AspNetUserRoles` permanecem no schema (herança do Identity) e seguem sem uso — custo de schema já existente, sem custo de manutenção.
 - Exclusão de usuário remove as permissões em cascata (FK).

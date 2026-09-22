@@ -11,8 +11,6 @@ import { cn } from "@/lib/utils"
 import { useVagas } from "@/hooks/use-vagas"
 import { useBuscaConfig } from "@/hooks/use-busca"
 import { useAplicacaoPendente } from "@/hooks/use-aplicacao-pendente"
-import { useAuth } from "@/features/auth/auth-context"
-import { PERMISSOES } from "@/features/auth/permissoes"
 import { CompatibilidadeDialog } from "@/features/vagas/compatibilidade-dialog"
 import { ConfirmarAplicacaoDialog } from "@/features/vagas/confirmar-aplicacao-dialog"
 import {
@@ -110,11 +108,10 @@ function Metricas({ execucao }: { execucao: ExecucaoBuscaDto | null }) {
   )
 }
 
-function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompatibilidade }: {
+function VagaCard({ vaga, onAplicar, onDescartar, onCompatibilidade }: {
   vaga: VagaDto
   onAplicar: () => void
   onDescartar: () => void
-  podeCompatibilidade: boolean
   onCompatibilidade: () => void
 }) {
   const [descartando, setDescartando] = useState(false)
@@ -158,17 +155,15 @@ function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompati
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        {podeCompatibilidade && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            disabled={descartando}
-            onClick={onCompatibilidade}
-          >
-            <Wand2 className="h-3.5 w-3.5" /> compatibilidade
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={descartando}
+          onClick={onCompatibilidade}
+        >
+          <Wand2 className="h-3.5 w-3.5" /> compatibilidade
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -201,11 +196,8 @@ function VagaCard({ vaga, onAplicar, onDescartar, podeCompatibilidade, onCompati
 
 function InboxTab() {
   const { vagas, loading, erro, executando, ultima, refresh, buscarAgora, aplicar, descartar } = useVagas()
-  const { hasPermissao } = useAuth()
   const [q, setQ] = useState("")
   const [compat, setCompat] = useState<VagaDto | null>(null)
-
-  const podeCompatibilidade = hasPermissao(PERMISSOES.compatibilidade)
 
   const { pendente, iniciar, limpar } = useAplicacaoPendente()
 
@@ -295,7 +287,6 @@ function InboxTab() {
               vaga={v}
               onAplicar={() => abrirParaAplicar(v)}
               onDescartar={() => void descartar(v.id)}
-              podeCompatibilidade={podeCompatibilidade}
               onCompatibilidade={() => setCompat(v)}
             />
           ))}

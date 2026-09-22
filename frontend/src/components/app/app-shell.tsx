@@ -17,9 +17,9 @@ import { cn } from "@/lib/utils"
 
 const NAV = [
   { to: "/app", label: "Candidaturas", icon: Kanban, end: true, permissao: undefined },
-  { to: "/app/vagas", label: "Busca de vagas", icon: Zap, end: false, permissao: PERMISSOES.buscaVagas },
+  { to: "/app/vagas", label: "Busca de vagas", icon: Zap, end: false, permissao: PERMISSOES.verifyUser },
   { to: "/app/curriculos", label: "Currículos", icon: FileText, end: false, permissao: undefined },
-  { to: "/app/configuracoes", label: "Configurações", icon: Settings, end: false, permissao: PERMISSOES.compatibilidade },
+  { to: "/app/configuracoes", label: "Configurações", icon: Settings, end: false, permissao: PERMISSOES.verifyUser },
   { to: "/app/admin", label: "Permissões", icon: ShieldCheck, end: false, permissao: PERMISSOES.admin },
 ]
 

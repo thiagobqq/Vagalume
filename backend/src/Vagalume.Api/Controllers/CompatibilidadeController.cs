@@ -17,7 +17,7 @@ namespace Vagalume.Api.Controllers;
 
 [ApiController]
 [Route("api/vagas")]
-[Authorize(Policy = Permissoes.Compatibilidade)]
+[Authorize(Policy = Permissoes.VerifyUser)]
 public class CompatibilidadeController : ControllerBase
 {
     private readonly AppDbContext _db;

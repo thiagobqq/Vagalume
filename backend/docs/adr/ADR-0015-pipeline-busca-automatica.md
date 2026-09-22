@@ -35,7 +35,7 @@ Scraping de portais (LinkedIn/Gupy/Catho) é o maior risco do produto (ADR-0003)
 - `INotificadorBusca`; a inbox é a notificação interna. `NotificadorBusca` envia resumo ao Discord quando o usuário configura um webhook (nunca logado). E-mail fica para fatia futura (sem infra de e-mail no projeto, ADR-0009).
 
 ### Acesso
-- Todo o módulo atrás da policy `Permissoes.BuscaVagas` (`busca_vagas.acesso`, ADR-0013). O paywall futuro troca a fonte do entitlement, sem tocar no módulo.
+- Todo o módulo atrás da policy `Permissoes.VerifyUser` (`verify_user`, ADR-0013). O paywall futuro troca a fonte do entitlement, sem tocar no módulo.
 
 ## Consequências
 

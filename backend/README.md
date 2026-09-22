@@ -51,7 +51,7 @@ backend/
 | GET | `/api/vagas/{id}/compatibilidade` | sim¹ | análise de compatibilidade existente |
 | POST | `/api/vagas/{id}/compatibilidade` | sim¹ | gera/regera gap-analysis currículo × vaga |
 
-¹ Policy `gap_analysis.acesso` (ADR-0019/0020).
+¹ Policy `verify_user` (ADR-0013/0019/0020).
 
 - `origem`: `LinkedIn,Gupy,Catho,Indicacao,SiteEmpresa,Outro` (400 se inválido)
 - `status`: `Aplicado,Triagem,Entrevista,Oferta,Encerrado` (400 se inválido, no-op se mesmo status)

@@ -33,7 +33,7 @@ export default function App() {
               <Route
                 path="configuracoes"
                 element={
-                  <ProtectedRoute permissao={PERMISSOES.compatibilidade}>
+                  <ProtectedRoute permissao={PERMISSOES.verifyUser}>
                     <ConfiguracoesPage />
                   </ProtectedRoute>
                 }
@@ -41,7 +41,7 @@ export default function App() {
               <Route
                 path="vagas"
                 element={
-                  <ProtectedRoute permissao={PERMISSOES.buscaVagas}>
+                  <ProtectedRoute permissao={PERMISSOES.verifyUser}>
                     <VagasPage />
                   </ProtectedRoute>
                 }

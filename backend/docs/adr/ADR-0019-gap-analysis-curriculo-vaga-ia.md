@@ -17,7 +17,7 @@ A avaliação de aderência por regras (o `FiltroVagaService` do ADR-0015) é bi
 - **Avaliação por IA:** `IAnalisadorCompatibilidade` envia o texto do currículo + os campos da vaga (título, empresa, local, modalidade, nível e descrição sem HTML) a um LLM via API **OpenAI-compatible** (`POST {baseUrl}/chat/completions`), pedindo JSON estrito: `score` (0–100), `resumo`, `requisitos[{requisito, atendido, evidencia, gap}]` e `sugestoes[]`. O provedor é configurado pelo próprio usuário (ADR-0020). O parse tolera JSON em bloco cercado (```json) como fallback.
 - **Persistência e cache:** entidade `AnaliseCompatibilidade` única por `(UsuarioId, VagaId)`, guardando `CurriculoId`, provedor/modelo usados e o resultado. `POST` gera/regera (upsert); `GET` devolve a existente sem chamar a IA. Se o currículo ativo mudou desde a análise, a resposta marca `desatualizada=true`.
 - **Processamento síncrono:** o `POST` aguarda o LLM (timeout configurável, default 50s), dentro do `proxy_read_timeout 90s` do nginx. Erros do provedor → `502`; timeout → `504`; sem currículo/PDF sem texto/IA não configurada → `400`.
-- **Acesso:** todo o módulo (configuração e análise) atrás da permissão `gap_analysis.acesso` (ADR-0013), preparada para o paywall.
+- **Acesso:** todo o módulo (configuração e análise) atrás da permissão `verify_user` (ADR-0013), preparada para o paywall.
 - **UI:** botão "compatibilidade" no card da inbox de vagas, abrindo um dialog com score, resumo, requisitos (atendido/gap) e sugestões.
 
 ## Consequências

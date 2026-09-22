@@ -16,7 +16,7 @@ namespace Vagalume.Api.Controllers;
 
 [ApiController]
 [Route("api/vagas")]
-[Authorize(Policy = Permissoes.BuscaVagas)]
+[Authorize(Policy = Permissoes.VerifyUser)]
 public class VagasController : ControllerBase
 {
     private readonly AppDbContext _db;
