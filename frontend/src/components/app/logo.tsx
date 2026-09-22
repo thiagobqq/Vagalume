@@ -12,23 +12,14 @@ export function LogoMark({ className }: { className?: string }) {
   )
 }
 
-/** Logo completa com assinatura — versões clara e escura (fundo transparente). */
+/** Logo completa — símbolo centralizado (fundo transparente). */
 export function LogoFull({ className }: { className?: string }) {
   return (
-    <>
-      <img
-        src="/logo-full.png"
-        alt="Vagalume — tracker e gerenciador de vagas"
-        draggable={false}
-        className={cn("w-full select-none dark:hidden", className)}
-      />
-      <img
-        src="/logo-full-dark.png"
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-        className={cn("hidden w-full select-none dark:block", className)}
-      />
-    </>
+    <img
+      src="/logo.png"
+      alt="Vagalume — tracker e gerenciador de vagas"
+      draggable={false}
+      className={cn("h-28 w-auto select-none", className)}
+    />
   )
 }

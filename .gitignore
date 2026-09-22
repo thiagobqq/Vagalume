@@ -1,0 +1,50 @@
+# ===== .NET =====
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+[Tt]est[Rr]esult*/
+*.VisualState.xml
+TestResult.xml
+
+# ===== Node / Frontend =====
+node_modules/
+dist/
+dist-ssr/
+build/
+out/
+.vite/
+*.local
+*.tsbuildinfo
+
+# ===== Logs =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===== Ambiente / Segredos =====
+.env
+.env.*
+!.env.example
+
+# ===== IDEs / Editores =====
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.sw?
+
+# ===== SO =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Docker / Dados locais =====
+*.pid
