@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: vagalume-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-vagalume}"
@@ -22,7 +21,6 @@ services:
     build:
       context: ./backend
       dockerfile: src/Vagalume.Api/Dockerfile
-    container_name: vagalume-api
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
@@ -46,13 +44,17 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
+        # vazio => frontend usa /api relativo e nginx faz proxy para api:8080
         VITE_API_URL: "${VITE_API_URL:-}"
-    container_name: vagalume-frontend
     restart: unless-stopped
     depends_on:
       - api
     networks:
       - vagalume
+      - dokploy-network
+    labels:
+      # garante que o Traefik use a dokploy-network para achar o IP do container
+      - traefik.docker.network=dokploy-network
 
 volumes:
   postgres_data:
@@ -61,3 +63,5 @@ volumes:
 networks:
   vagalume:
     driver: bridge
+  dokploy-network:
+    external: true
