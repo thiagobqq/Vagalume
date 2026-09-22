@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vagalume-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-vagalume}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-Vagalume@123}"
+      POSTGRES_DB: "${POSTGRES_DB:-vagalume}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vagalume} -d ${POSTGRES_DB:-vagalume}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - vagalume
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: src/Vagalume.Api/Dockerfile
+    container_name: vagalume-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-vagalume};Username=${POSTGRES_USER:-vagalume};Password=${POSTGRES_PASSWORD:-Vagalume@123}"
+      Jwt__Key: "${JWT_KEY:-chave-super-secreta-de-32-caracteres!!-vagalume-dev}"
+      Jwt__Issuer: "${JWT_ISSUER:-vagalume}"
+      Jwt__Audience: "${JWT_AUDIENCE:-vagalume}"
+      Seguranca__ChaveCripto: "${SEGURANCA_CHAVE_CRIPTO:-troque-este-segredo-em-producao}"
+      Ia__Presets__OllamaBaseUrl: "${IA_PRESETS_OLLAMA_BASE_URL:-}"
+      Uploads__BasePath: "/app/uploads"
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vagalume
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "${VITE_API_URL:-}"
+    container_name: vagalume-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - vagalume
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  vagalume:
+    driver: bridge
