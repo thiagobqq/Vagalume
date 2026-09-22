@@ -73,7 +73,7 @@ export type CriarFonteBuscaRequest = {
   nome?: string | null
 }
 
-export const FONTE_TIPOS = ["Gupy", "Trampos", "Programathor", "InfoJobs", "Catho", "Rss"] as const
+export const FONTE_TIPOS = ["Gupy", "Trampos", "Programathor", "InfoJobs", "Catho", "LinkedIn", "Rss"] as const
 
 export const FONTE_LABEL: Record<string, string> = {
   Gupy: "Gupy",
@@ -81,6 +81,7 @@ export const FONTE_LABEL: Record<string, string> = {
   Programathor: "Programathor",
   InfoJobs: "InfoJobs",
   Catho: "Catho",
+  LinkedIn: "LinkedIn",
   Rss: "RSS",
 }
 
@@ -90,6 +91,7 @@ export const FONTE_HINT: Record<string, string> = {
   Programathor: "Portal de vagas de tecnologia; busca por palavra-chave.",
   InfoJobs: "Busca por palavra-chave no portal InfoJobs.",
   Catho: "Busca por palavra-chave no portal Catho.",
+  LinkedIn: "Busca pública do LinkedIn, sem login. Opcional: informe a localização (ex.: São Paulo, Brasil); vazio = Brasil.",
   Rss: "Informe a URL do feed RSS/Atom da empresa ou portal.",
 }
 

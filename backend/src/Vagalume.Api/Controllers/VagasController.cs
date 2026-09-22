@@ -138,6 +138,7 @@ public class VagasController : ControllerBase
     {
         FonteTipo.Gupy => OrigemCandidatura.Gupy,
         FonteTipo.Catho => OrigemCandidatura.Catho,
+        FonteTipo.LinkedIn => OrigemCandidatura.LinkedIn,
         _ => OrigemCandidatura.Outro
     };
 }

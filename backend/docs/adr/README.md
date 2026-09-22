@@ -24,3 +24,4 @@ Decisões de arquitetura do backend do Analista de Busca de Emprego. Cada ADR é
 | [0018](ADR-0018-postgresql-no-lugar-do-sqlserver.md) | PostgreSQL no lugar do SQL Server (supersede o banco do ADR-0001) | Aceito |
 | [0019](ADR-0019-gap-analysis-curriculo-vaga-ia.md) | Gap-analysis currículo × vaga com IA | Aceito |
 | [0020](ADR-0020-byok-provedor-de-ia-do-usuario.md) | Provedor de IA do usuário (BYOK), presets e cifragem da chave | Aceito |
+| [0021](ADR-0021-linkedin-como-fonte-de-vagas.md) | LinkedIn como fonte de vagas (revisa o ADR-0016) | Aceito |

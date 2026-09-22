@@ -221,7 +221,7 @@ export function Landing() {
             <Step
               n="2"
               title="A gente garimpa as vagas"
-              desc="O Vagalume varre Gupy, Trampos, Programathor, InfoJobs, Catho e os feeds que você indicar — e joga só o que interessa na sua inbox."
+              desc="O Vagalume varre LinkedIn, Gupy, Trampos, Programathor, InfoJobs, Catho e os feeds que você indicar — e joga só o que interessa na sua inbox."
             />
             <Step
               n="3"
@@ -371,7 +371,7 @@ export function Landing() {
               pelo que usar. O Vagalume não fica no meio disso.
             </Faq>
             <Faq q="De onde vêm as vagas?">
-              Hoje: Gupy, Trampos, Programathor, InfoJobs, Catho e feeds RSS que você cadastrar. Você define
+              Hoje: LinkedIn, Gupy, Trampos, Programathor, InfoJobs, Catho e feeds RSS que você cadastrar. Você define
               palavras-chave, nível, modalidade e localização pra filtrar o que chega.
             </Faq>
             <Faq q="O Vagalume aplica nas vagas por mim?">

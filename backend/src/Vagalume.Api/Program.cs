@@ -134,6 +134,7 @@ builder.Services.AddScoped<IFonteVagas, TramposFonte>();
 builder.Services.AddScoped<IFonteVagas, ProgramathorFonte>();
 builder.Services.AddScoped<IFonteVagas, InfoJobsFonte>();
 builder.Services.AddScoped<IFonteVagas, CathoFonte>();
+builder.Services.AddScoped<IFonteVagas, LinkedInFonte>();
 builder.Services.AddScoped<IFonteVagas, RssFonte>();
 builder.Services.AddScoped<INotificadorBusca, NotificadorBusca>();
 builder.Services.AddScoped<IBuscaVagasService, ColetaVagasService>();

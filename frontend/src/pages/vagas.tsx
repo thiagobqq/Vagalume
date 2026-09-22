@@ -55,6 +55,7 @@ const FONTE_COLOR: Record<string, string> = {
   Programathor: "var(--crayon-purple)",
   InfoJobs: "var(--crayon-orange)",
   Catho: "var(--crayon-pink)",
+  LinkedIn: "var(--crayon-yellow)",
   Rss: "var(--crayon-blue)",
 }
 
@@ -559,7 +560,7 @@ function FontesPanel({
   onAlternar: ReturnType<typeof useBuscaConfig>["alternarFonte"]
   onRemover: ReturnType<typeof useBuscaConfig>["removerFonte"]
 }) {
-  const [tipo, setTipo] = useState<string>("Greenhouse")
+  const [tipo, setTipo] = useState<string>("Gupy")
   const [identificador, setIdentificador] = useState("")
   const [nomeEmpresa, setNomeEmpresa] = useState("")
   const [adicionando, setAdicionando] = useState(false)
@@ -620,6 +621,13 @@ function FontesPanel({
           <label className="space-y-1 text-xs font-medium sm:col-span-1">
             Slug da empresa (opcional)
             <Input value={identificador} onChange={(e) => setIdentificador(e.target.value)} placeholder="vazio = todo o portal" />
+          </label>
+        )}
+
+        {tipo === "LinkedIn" && (
+          <label className="space-y-1 text-xs font-medium sm:col-span-1">
+            Localização (opcional)
+            <Input value={identificador} onChange={(e) => setIdentificador(e.target.value)} placeholder="vazio = Brasil" />
           </label>
         )}
 

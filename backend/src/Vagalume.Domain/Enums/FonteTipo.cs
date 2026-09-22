@@ -7,5 +7,6 @@ public enum FonteTipo
     Programathor = 2,
     InfoJobs = 3,
     Catho = 4,
-    Rss = 5
+    Rss = 5,
+    LinkedIn = 6
 }

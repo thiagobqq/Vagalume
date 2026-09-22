@@ -22,7 +22,7 @@ Termos de domínio do backend do Analista de Busca de Emprego. Definições norm
 
 **Currículo Ativo** — O currículo que o sistema considera "o atual" do usuário; alvo das features de comparação (gap-analysis). Invariante: um e apenas um ativo por usuário. [ADR-0008]
 
-**Fonte de Busca** — Origem de vagas configurada pelo usuário (`FonteBusca`): tipo (`Gupy, Trampos, Programathor, InfoJobs, Catho, Rss`), identificador opcional (Gupy = slug de empresa; RSS = URL do feed), nome da empresa opcional e ativo/inativo. Gupy e Trampos usam APIs públicas; Programathor/InfoJobs/Catho usam scraping HTML; RSS é genérico. [ADR-0015, ADR-0016]
+**Fonte de Busca** — Origem de vagas configurada pelo usuário (`FonteBusca`): tipo (`Gupy, Trampos, Programathor, InfoJobs, Catho, LinkedIn, Rss`), identificador opcional (Gupy = slug de empresa; RSS = URL do feed; LinkedIn = localização), nome da empresa opcional e ativo/inativo. Gupy e Trampos usam APIs públicas; Programathor/InfoJobs/Catho/LinkedIn usam scraping HTML; RSS é genérico. [ADR-0015, ADR-0016, ADR-0021]
 
 **Perfil de Busca** — Critérios e agenda do usuário para a busca automática (`PerfilBusca`): palavras-chave, tecnologias, níveis, modalidades, exclusões, localização, como combinar os termos (`Qualquer`/`Todos`), hora e dias de execução, fuso e webhook do Discord. [ADR-0015]
 
@@ -34,7 +34,7 @@ Termos de domínio do backend do Analista de Busca de Emprego. Definições norm
 
 **Busca automática** — Coleta periódica de vagas em fontes configuradas, com normalização, filtragem pelos critérios, deduplicação, persistência e notificação opcional. Fontes brasileiras (portais e tech), algumas via API e outras via scraping. Substitui a antiga "extração automática" adiada no ADR-0003. [ADR-0014, ADR-0015, ADR-0016]
 
-**Scraping** — Leitura de HTML público de portais sem API (Programathor, InfoJobs, Catho) com AngleSharp, rate-limit conservador e User-Agent de navegador (portais com WAF bloqueiam UA de bot). Provedores isolados: falha de um site não derruba a execução. [ADR-0016]
+**Scraping** — Leitura de HTML público de portais sem API (Programathor, InfoJobs, Catho, LinkedIn) com AngleSharp, rate-limit conservador e User-Agent de navegador (portais com WAF bloqueiam UA de bot). Provedores isolados: falha de um site não derruba a execução. [ADR-0016, ADR-0021]
 
 **Configuração de IA (Provedor de IA)** — Dados por usuário (`ConfiguracaoIa`) para acessar um LLM no modelo **BYOK**: provedor pré-definido (enum `ProvedorIa`), modelo e API key **cifrada em repouso**. Não há provedor/chave padrão no servidor. [ADR-0020]
 
