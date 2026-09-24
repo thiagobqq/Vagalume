@@ -29,7 +29,7 @@ function Step({ n, title, desc }: { n: string; title: string; desc: string }) {
   return (
     <div className="relative">
       <span className="hand absolute -left-1 -top-4 z-10 rotate-[-6deg] text-2xl text-primary">{n}</span>
-      <NotebookCard ruled className="h-full">
+      <NotebookCard ruled holes className="h-full">
         <h3 className="text-sm font-extrabold tracking-tight">{title}</h3>
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{desc}</p>
       </NotebookCard>
@@ -49,7 +49,7 @@ function Feature({
   color: string
 }) {
   return (
-    <NotebookCard className="h-full">
+    <NotebookCard holes className="h-full">
       <div
         className="grid h-9 w-9 place-items-center rounded-lg border-[1.5px] border-ink/20"
         style={{ background: `color-mix(in srgb, ${color} 16%, var(--card))` }}
@@ -311,7 +311,7 @@ export function Landing() {
           </div>
 
           <div className="relative">
-            <NotebookPanel title="Compatibilidade" headerColor="var(--crayon-green)" badge={<Zap className="h-4 w-4 text-primary" />}>
+            <NotebookPanel holes title="Compatibilidade" headerColor="var(--crayon-green)" badge={<Zap className="h-4 w-4 text-primary" />}>
               <div className="flex items-center gap-3">
                 <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl border-[1.5px] border-emerald-500/40 bg-emerald-500/10">
                   <div className="text-center leading-none">
@@ -388,7 +388,7 @@ export function Landing() {
 
         {/* ── cta final ── */}
         <section>
-          <NotebookPanel tape>
+          <NotebookPanel tape holes>
             <div className="flex flex-col items-center gap-4 px-2 py-6 text-center sm:px-8 sm:py-8">
               <span className="hand rotate-[-2deg] text-xl text-muted-foreground">chega de perder o fio da meada</span>
               <h2 className="max-w-[22ch] text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">

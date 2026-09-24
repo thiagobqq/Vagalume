@@ -97,7 +97,7 @@ export function KanbanBoard({
         clearSuppress()
       }}
     >
-      <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid min-h-0 flex-1 grid-cols-1 content-start items-start gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:grid-rows-1">
         {STATUS_ORDER.map((s) => (
           <KanbanColumn key={s} status={s} apps={grouped[s]} onOpenDetail={handleOpenDetail} />
         ))}
