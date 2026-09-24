@@ -276,6 +276,51 @@ body {
   background: transparent;
 }
 
+/* ───────── Vaga-lumes ao fundo ───────── */
+.firefly {
+  --ff-color: #f59e0b;
+  position: absolute;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--ff-color) 55%, #fff) 0%,
+    color-mix(in srgb, var(--ff-color) 55%, transparent) 50%,
+    transparent 74%
+  );
+  box-shadow: 0 0 8px 2px color-mix(in srgb, var(--ff-color) 50%, transparent);
+  filter: blur(0.4px);
+  mix-blend-mode: screen;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: firefly-drift var(--ff-duration, 22s) linear var(--ff-delay, 0s) infinite;
+}
+
+.dark .firefly {
+  --ff-color: var(--primary);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--ff-color) 55%, transparent);
+}
+
+@keyframes firefly-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--ff-opacity, 0.3);
+  }
+  50% {
+    transform: translate3d(calc(var(--ff-x, 60px) * 0.5), calc(var(--ff-y, 40px) * 0.5), 0) scale(1.1);
+    opacity: calc(var(--ff-opacity, 0.3) * 0.45);
+  }
+  85% {
+    opacity: var(--ff-opacity, 0.3);
+  }
+  100% {
+    transform: translate3d(var(--ff-x, 60px), var(--ff-y, 40px), 0) scale(0.8);
+    opacity: 0;
+  }
+}
+
 /* ───────── View Transition — cross-fade sutil no toggle de tema ───────── */
 ::view-transition-old(root),
 ::view-transition-new(root) {
@@ -291,5 +336,9 @@ body {
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation: none !important;
+  }
+  .firefly {
+    animation: none !important;
+    opacity: calc(var(--ff-opacity, 0.3) * 0.4);
   }
 }

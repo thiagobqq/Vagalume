@@ -31,7 +31,7 @@ export function Login() {
   }
 
   return (
-    <div className="paper-texture grid min-h-screen place-items-center bg-background p-4">
+    <div className="paper-texture grid min-h-screen place-items-center p-4">
       <div className="w-full max-w-[400px] space-y-5">
         <Link to="/" className="flex justify-center">
           <LogoFull className="max-w-[260px]" />
