@@ -31,4 +31,8 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Vagalume.UnitTests" />
+  </ItemGroup>
+
 </Project>
