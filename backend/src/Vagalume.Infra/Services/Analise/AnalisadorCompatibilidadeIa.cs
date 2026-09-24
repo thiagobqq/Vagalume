@@ -134,7 +134,7 @@ public class AnalisadorCompatibilidadeIa : IAnalisadorCompatibilidade
         }
     }
 
-    private static ResultadoAnaliseCompatibilidade Interpretar(string content)
+    internal static ResultadoAnaliseCompatibilidade Interpretar(string content)
     {
         RespostaAnalise? resposta;
         try
@@ -170,7 +170,7 @@ public class AnalisadorCompatibilidadeIa : IAnalisadorCompatibilidade
         };
     }
 
-    private static string ExtrairJson(string content)
+    internal static string ExtrairJson(string content)
     {
         var texto = content.Trim();
         if (texto.StartsWith("```", StringComparison.Ordinal))
@@ -183,7 +183,7 @@ public class AnalisadorCompatibilidadeIa : IAnalisadorCompatibilidade
         return texto;
     }
 
-    private static string ExtrairErro(string body)
+    internal static string ExtrairErro(string body)
     {
         try
         {
@@ -203,7 +203,7 @@ public class AnalisadorCompatibilidadeIa : IAnalisadorCompatibilidade
         return string.Empty;
     }
 
-    private static string Truncar(string? texto, int max)
+    internal static string Truncar(string? texto, int max)
     {
         if (string.IsNullOrWhiteSpace(texto))
             return string.Empty;
