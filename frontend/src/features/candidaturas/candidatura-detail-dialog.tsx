@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ExternalLink } from "lucide-react"
+import { Loader2, ExternalLink, Pencil } from "lucide-react"
 import type { CandidaturaDetalhadaDto, Origem, Status } from "./types"
-import { ORIGEM_VALUES, STATUS_VALUES } from "./types"
+import { ORIGEM_VALUES } from "./types"
+import { STATUS_STYLE } from "./status-style"
 import { atualizarCandidatura, obterCandidatura } from "./api"
 
 const STATUS_BADGE: Record<Status, "applied" | "triage" | "interview" | "offer" | "closed"> = {
@@ -17,6 +18,15 @@ const STATUS_BADGE: Record<Status, "applied" | "triage" | "interview" | "offer" 
   Entrevista: "interview",
   Oferta: "offer",
   Encerrado: "closed",
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0 space-y-1">
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="min-w-0 break-words text-sm">{children}</div>
+    </div>
+  )
 }
 
 type Props = {
@@ -30,6 +40,7 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
   const [data, setData] = useState<CandidaturaDetalhadaDto | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   const [empresa, setEmpresa] = useState("")
@@ -41,6 +52,7 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
   useEffect(() => {
     if (!open || !id) return
     setLoading(true)
+    setEditing(false)
     setErr(null)
     obterCandidatura(id)
       .then((d) => {
@@ -55,6 +67,22 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
       .finally(() => setLoading(false))
   }, [id, open])
 
+  function enterEdit() {
+    if (!data) return
+    setEmpresa(data.empresa)
+    setCargo(data.cargo)
+    setLink(data.link ?? "")
+    setOrigem((data.origem as Origem) || "Outro")
+    setObs(data.observacoes ?? "")
+    setErr(null)
+    setEditing(true)
+  }
+
+  function cancelEdit() {
+    setErr(null)
+    setEditing(false)
+  }
+
   async function handleSave() {
     if (!id) return
     if (!empresa.trim() || !cargo.trim()) {
@@ -64,7 +92,7 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
     setSaving(true)
     setErr(null)
     try {
-      await atualizarCandidatura(id, {
+      const atualizada = await atualizarCandidatura(id, {
         empresa: empresa.trim(),
         cargo: cargo.trim(),
         link: link.trim() ? link.trim() : null,
@@ -72,7 +100,8 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
         observacoes: obs.trim() ? obs.trim() : null,
       })
       onUpdated()
-      onOpenChange(false)
+      setData((d) => (d ? { ...d, ...atualizada } : d))
+      setEditing(false)
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -83,9 +112,15 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-[640px]">
-        <DialogHeader>
-          <DialogTitle>Detalhe da candidatura</DialogTitle>
-          <DialogDescription className="text-xs">Edite os campos ou veja o histórico de status.</DialogDescription>
+        <DialogHeader className="min-w-0">
+          <DialogTitle className="break-words">{data ? (editing ? "Editar candidatura" : data.cargo) : "Detalhe da candidatura"}</DialogTitle>
+          <DialogDescription className="break-words text-xs">
+            {data
+              ? editing
+                ? "Atualize os campos e salve."
+                : data.empresa
+              : "Carregando..."}
+          </DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -95,90 +130,119 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
         ) : err && !data ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{err}</div>
         ) : data ? (
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Empresa</Label>
-                <Input value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Origem</Label>
-                <Select value={origem} onValueChange={(v) => setOrigem(v as Origem)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ORIGEM_VALUES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Cargo</Label>
-              <Input value={cargo} onChange={(e) => setCargo(e.target.value)} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Link</Label>
-              <Input value={link} onChange={(e) => setLink(e.target.value)} className="text-xs" />
-              {data.link && (
-                <a href={data.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground">
-                  abrir link <ExternalLink className="h-3 w-3" />
-                </a>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Observações</Label>
-              <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} maxLength={2000} />
-            </div>
-
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <Badge variant={STATUS_BADGE[(data.status as Status) || "Aplicado"]}>status: {data.status}</Badge>
-              <span className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1">
-                criado: {new Date(data.criadoEm).toLocaleString("pt-BR")}
-              </span>
-              <span className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1">
-                atualizado: {new Date(data.atualizadoEm).toLocaleString("pt-BR")}
-              </span>
-            </div>
-
-            {err && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{err}</div>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-              <Button onClick={handleSave} disabled={saving} className="gap-2">
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />} salvar
-              </Button>
-            </div>
-
-            <div className="space-y-3 border-t pt-4">
-              <h4 className="text-sm font-semibold">Histórico de status</h4>
-              {data.eventos.length === 0 ? (
-                <p className="text-xs text-muted-foreground">sem eventos</p>
-              ) : (
+          editing ? (
+            <div className="min-w-0 space-y-5">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  {data.eventos.map((ev) => (
-                    <div key={ev.id} className="flex flex-col gap-1.5 rounded-lg border bg-muted/30 px-3 py-2 text-xs">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-md border bg-card px-2 py-0.5 text-muted-foreground">
-                          {ev.statusAnterior ?? "—"}
-                        </span>
-                        <span className="text-muted-foreground">→</span>
-                        <Badge variant={STATUS_BADGE[(ev.statusNovo as Status) || "Aplicado"]}>{ev.statusNovo}</Badge>
-                        <span className="ml-auto text-muted-foreground">{new Date(ev.criadoEm).toLocaleString("pt-BR")}</span>
-                      </div>
-                      {ev.observacao && <p className="border-l-2 border-border pl-2 text-muted-foreground">{ev.observacao}</p>}
-                    </div>
-                  ))}
+                  <Label>Empresa</Label>
+                  <Input value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
                 </div>
+                <div className="space-y-2">
+                  <Label>Origem</Label>
+                  <Select value={origem} onValueChange={(v) => setOrigem(v as Origem)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ORIGEM_VALUES.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cargo</Label>
+                <Input value={cargo} onChange={(e) => setCargo(e.target.value)} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Link</Label>
+                <Input value={link} onChange={(e) => setLink(e.target.value)} className="text-xs" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Observações</Label>
+                <Textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} maxLength={2000} />
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <Badge variant={STATUS_BADGE[(data.status as Status) || "Aplicado"]}>status: {data.status}</Badge>
+                <span className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1">
+                  criado: {new Date(data.criadoEm).toLocaleString("pt-BR")}
+                </span>
+                <span className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1">
+                  atualizado: {new Date(data.atualizadoEm).toLocaleString("pt-BR")}
+                </span>
+              </div>
+
+              {err && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{err}</div>
               )}
-              <p className="text-[11px] text-muted-foreground">
-                Status disponíveis: {STATUS_VALUES.join(", ")} (transição livre, conforme backend).
-              </p>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={cancelEdit} disabled={saving}>cancelar</Button>
+                <Button onClick={handleSave} disabled={saving} className="gap-2">
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />} salvar
+                </Button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="min-w-0 space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Empresa">{data.empresa}</Field>
+                <Field label="Cargo">{data.cargo}</Field>
+                <Field label="Origem">{data.origem}</Field>
+                <Field label="Status">
+                  <Badge variant={STATUS_BADGE[(data.status as Status) || "Aplicado"]} className="gap-1.5">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: STATUS_STYLE[(data.status as Status) || "Aplicado"].dot }}
+                      aria-hidden="true"
+                    />
+                    {data.status}
+                  </Badge>
+                </Field>
+              </div>
+
+              <Field label="Link">
+                {data.link ? (
+                  <a
+                    href={data.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="break-all underline underline-offset-4 hover:opacity-80"
+                  >
+                    {data.link} <ExternalLink className="inline h-3.5 w-3.5 align-[-2px]" />
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">sem link</span>
+                )}
+              </Field>
+
+              <div className="min-w-0 space-y-1">
+                <div className="text-xs font-medium text-muted-foreground">Observações</div>
+                {data.observacoes ? (
+                  <p className="whitespace-pre-wrap break-words rounded-lg border bg-muted/30 px-3 py-2 text-sm">{data.observacoes}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">sem observações</p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1">
+                  criado: {new Date(data.criadoEm).toLocaleString("pt-BR")}
+                </span>
+                <span className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1">
+                  atualizado: {new Date(data.atualizadoEm).toLocaleString("pt-BR")}
+                </span>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>fechar</Button>
+                <Button onClick={enterEdit} className="gap-2">
+                  <Pencil className="h-4 w-4" /> editar
+                </Button>
+              </div>
+            </div>
+          )
         ) : null}
       </DialogContent>
     </Dialog>

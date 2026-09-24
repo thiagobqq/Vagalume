@@ -18,7 +18,7 @@ export function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: status })
 
   return (
-    <div className="relative min-w-0 pt-3">
+    <div className="relative flex min-h-0 min-w-0 flex-col pt-3 lg:max-h-full">
       {/* fita washi que prende a folha na parede */}
       <div
         className="tape absolute left-1/2 top-0 z-20 h-7 w-24 -translate-x-1/2 -rotate-2 rounded-[2px]"
@@ -30,7 +30,7 @@ export function KanbanColumn({
         ref={setNodeRef}
         style={{ background: soft }}
         className={cn(
-          "relative flex min-w-0 flex-col overflow-hidden rounded-2xl border-[1.5px] border-ink shadow-hard transition-shadow",
+          "relative flex min-w-0 flex-col overflow-hidden rounded-2xl border-[1.5px] border-ink shadow-hard transition-shadow lg:min-h-0 lg:flex-1",
           isOver && "ring-4 ring-primary/60"
         )}
       >
@@ -43,7 +43,7 @@ export function KanbanColumn({
           aria-hidden="true"
         />
 
-        <div className="relative z-20 flex items-center justify-between gap-2 border-b-[1.5px] border-ink/15 bg-card/70 px-4 py-3 backdrop-blur-sm">
+        <div className="relative z-20 flex shrink-0 items-center justify-between gap-2 border-b-[1.5px] border-ink/15 bg-card/70 px-4 py-3 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full border border-ink/20" style={{ background: dot }} />
             <h3 className="text-[13px] font-extrabold tracking-tight">{STATUS_LABEL[status]}</h3>
@@ -53,7 +53,7 @@ export function KanbanColumn({
           </span>
         </div>
 
-        <div className="relative z-20 flex min-h-[440px] flex-1 flex-col gap-3 p-3">
+        <div className="relative z-20 flex min-h-[440px] flex-1 flex-col gap-3 p-3 lg:min-h-0 lg:overflow-y-auto">
           {apps.length === 0 ? (
             <div className="grid flex-1 place-items-center rounded-xl border-[1.5px] border-dashed border-ink/25 bg-card/50 px-4 py-8 text-center">
               <div>

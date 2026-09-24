@@ -52,7 +52,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <header className="sticky top-0 z-40 border-b-[1.5px] border-ink bg-[var(--nb-paper)]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center gap-3 px-4 sm:px-6">
           <Brand />
@@ -154,7 +154,7 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:py-8">
+      <main className="mx-auto w-full min-h-0 max-w-[1600px] flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-8">
         <Outlet />
       </main>
     </div>

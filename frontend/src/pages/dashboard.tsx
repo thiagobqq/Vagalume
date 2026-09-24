@@ -34,7 +34,7 @@ export function Dashboard() {
   const shownError = actionError ?? error
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-full flex-col gap-6">
       <PageHeader
         title="Candidaturas"
         description="Seu funil de vagas em 5 etapas. Arraste os cards entre as colunas; clique para editar e ver o histórico."
@@ -47,8 +47,8 @@ export function Dashboard() {
         </Button>
       </PageHeader>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="flex shrink-0 items-center gap-3">
           <div className="relative max-w-sm flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -66,7 +66,7 @@ export function Dashboard() {
         </div>
 
         {shownError && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border-[1.5px] border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <div className="flex shrink-0 items-center justify-between gap-3 rounded-xl border-[1.5px] border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             <span>{shownError}</span>
             <Button size="sm" variant="outline" onClick={refresh}>
               tentar novamente
@@ -75,7 +75,7 @@ export function Dashboard() {
         )}
 
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="h-[480px] animate-pulse rounded-2xl border-[1.5px] border-ink/20 bg-muted/40" />
             ))}

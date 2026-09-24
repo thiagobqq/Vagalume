@@ -41,7 +41,7 @@ export function ApplicationCard({
         }
       }}
       className={cn(
-        "relative flex select-none flex-col gap-3 overflow-hidden rounded-xl border-[1.5px] border-ink/70 bg-[var(--nb-card)] p-4 text-left shadow-hard-xs outline-none transition-[transform,box-shadow,border-color]",
+        "relative flex shrink-0 select-none flex-col gap-3 overflow-hidden rounded-xl border-[1.5px] border-ink/70 bg-[var(--nb-card)] p-4 text-left shadow-hard-xs outline-none transition-[transform,box-shadow,border-color]",
         "focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         overlay
           ? "rotate-[-3deg] cursor-grabbing shadow-hard"
