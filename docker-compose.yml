@@ -4,7 +4,7 @@ services:
     container_name: vagalume-postgres
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-vagalume}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-Vagalume@123}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}"
       POSTGRES_DB: "${POSTGRES_DB:-vagalume}"
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -24,15 +24,10 @@ services:
       context: ./backend
       dockerfile: src/Vagalume.Api/Dockerfile
     container_name: vagalume-api
+    env_file:
+      - .env
     environment:
-      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Development}"
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-vagalume};Username=${POSTGRES_USER:-vagalume};Password=${POSTGRES_PASSWORD:-Vagalume@123}"
-      Jwt__Key: "${JWT_KEY:-chave-super-secreta-de-32-caracteres!!-vagalume-dev}"
-      Jwt__Issuer: "${JWT_ISSUER:-vagalume}"
-      Jwt__Audience: "${JWT_AUDIENCE:-vagalume}"
-      Seguranca__ChaveCripto: "${SEGURANCA_CHAVE_CRIPTO:-troque-este-segredo-em-producao}"
-      Ia__Presets__OllamaBaseUrl: "${IA_PRESETS_OLLAMA_BASE_URL:-}"
-      Uploads__BasePath: "/app/uploads"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-vagalume};Username=${POSTGRES_USER:-vagalume};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}"
     ports:
       - "${API_PORT:-5000}:8080"
     volumes:

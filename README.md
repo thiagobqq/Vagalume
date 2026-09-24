@@ -30,25 +30,52 @@ docker compose up --build
 ```
 
 ### Variáveis (.env na raiz ou backend/.env)
+
+O backend carrega o `.env` procurando no diretório atual e nos diretórios pais (via `DotNetEnv.Env.TraversePath()`), então um `.env` na raiz ou em `backend/` é lido tanto no `dotnet run` quanto no Docker Compose. As chaves usam o **formato .NET** (`__` vira `:`), então não há tradução de nomes no código:
+
 ```
+# App
+ASPNETCORE_ENVIRONMENT=Development
+
+# Banco (no docker o compose sobrescreve o Host para "postgres")
+ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123
+
+# JWT
+Jwt__Key=chave-super-secreta-de-32-caracteres!!-vagalume-dev
+Jwt__Issuer=vagalume
+Jwt__Audience=vagalume
+
+# Criptografia da API key de IA (BYOK) — obrigatória em produção
+Seguranca__ChaveCripto=troque-este-segredo-em-producao
+
+# Uploads
+Uploads__BasePath=/app/uploads
+
+# Docker Compose (infra)
 POSTGRES_USER=vagalume
 POSTGRES_PASSWORD=Vagalume@123
 POSTGRES_DB=vagalume
 POSTGRES_PORT=5432
 API_PORT=5000
 FRONTEND_PORT=3000
-JWT_KEY=chave-super-secreta-de-32-caracteres!!-vagalume-dev
+
+# Frontend (opcional)
 VITE_API_URL=   # vazio = usa proxy /api (recomendado no docker)
-SEGURANCA_CHAVE_CRIPTO=troque-este-segredo-em-producao  # cifra a API key de IA (BYOK)
 IA_PRESETS_OLLAMA_BASE_URL=   # opcional: habilita provedor Ollama local
 ```
+
+> O `docker-compose.yml` de dev **não tem segredos embutidos**: o serviço `api` usa `env_file: .env` (injeta JWT, cripto, uploads etc.) e só sobrescreve a connection string para `Host=postgres`. Sem `.env`, o Compose falha de propósito com mensagem clara (variáveis obrigatórias).
+>
+> Em **produção** a API falha no startup se `Jwt__Key` estiver fraca/placeholder ou se `Seguranca__ChaveCripto` não for definida. No `docker-compose.prod.yml` as variáveis vêm da plataforma (`JWT_KEY`, `SEGURANCA_CHAVE_CRIPTO`, `POSTGRES_PASSWORD`) e também são obrigatórias no Compose.
 
 ## Rodar em dev sem Docker
 
 **Backend** (precisa PostgreSQL externo):
 ```bash
-export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123"
+cp .env.example .env   # o backend carrega este .env automaticamente
 dotnet run --project backend/src/Vagalume.Api
+# alternativa sem .env: exporte as variáveis no formato .NET
+# export ConnectionStrings__DefaultConnection="Host=localhost;..."
 ```
 
 **Frontend**:

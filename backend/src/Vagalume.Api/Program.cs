@@ -23,31 +23,36 @@ using Vagalume.Infra.Services.Busca.Fontes;
 using Vagalume.Infra.Services.Busca.Notificacoes;
 using Vagalume.Infra.Services.Seguranca;
 
-Env.Load();
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection não configurada (defina ConnectionStrings__DefaultConnection).");
 
-// Configuration from env
-var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-                    ?? builder.Configuration.GetConnectionString("DefaultConnection")
-                    ?? "Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123";
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("Jwt:Key não configurada (defina Jwt__Key).");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "vagalume";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "vagalume";
 
-var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key") ?? builder.Configuration["Jwt:Key"] ?? "chave-super-secreta-de-32-caracteres!!";
-var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer") ?? builder.Configuration["Jwt:Issuer"] ?? "vagalume";
-var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience") ?? builder.Configuration["Jwt:Audience"] ?? "vagalume";
-
-// garante que a chave vá para Configuration para TokenService
-builder.Configuration["Jwt:Key"] = jwtKey;
-builder.Configuration["Jwt:Issuer"] = jwtIssuer;
-builder.Configuration["Jwt:Audience"] = jwtAudience;
 if (string.IsNullOrEmpty(builder.Configuration["Jwt:AccessTokenExpiresMinutes"]))
     builder.Configuration["Jwt:AccessTokenExpiresMinutes"] = "60";
 if (string.IsNullOrEmpty(builder.Configuration["Jwt:RefreshTokenExpiresDays"]))
     builder.Configuration["Jwt:RefreshTokenExpiresDays"] = "7";
-if (string.IsNullOrEmpty(builder.Configuration["Uploads:BasePath"]))
-    builder.Configuration["Uploads:BasePath"] = Environment.GetEnvironmentVariable("Uploads__BasePath") ?? "/app/uploads";
 
-// DbContext
+
+if (!builder.Environment.IsDevelopment())
+{
+    if (jwtKey.Length < 32 || jwtKey.Contains("vagalume-dev") || jwtKey.Contains("chave-super-secreta"))
+        throw new InvalidOperationException("Jwt:Key fraca/placeholder em produção. Defina Jwt__Key com um segredo forte.");
+
+    var chaveCripto = builder.Configuration["Seguranca:ChaveCripto"];
+    if (string.IsNullOrWhiteSpace(chaveCripto) || chaveCripto == "troque-este-segredo-em-producao")
+        throw new InvalidOperationException("Seguranca:ChaveCripto ausente/placeholder em produção. Defina Seguranca__ChaveCripto.");
+}
+
+
 builder.Services.AddDbContext<AppDbContext>(opts =>
     opts.UseNpgsql(connectionString));
 

@@ -69,27 +69,31 @@ backend/
 
 ## Rodar local (sem Docker, precisa PostgreSQL)
 ```bash
+cp .env.example .env   # .env na raiz ou em backend/ é carregado via DotNetEnv (TraversePath)
+dotnet run --project src/Vagalume.Api
+# Swagger: http://localhost:5000/swagger
+```
+Alternativa sem `.env` — exporte no formato .NET:
+```bash
 export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123"
 export Uploads__BasePath="/tmp/vagalume_uploads"
 export Seguranca__ChaveCripto="troque-este-segredo-em-producao"   # cifra a API key de IA (BYOK)
-dotnet run --project src/Vagalume.Api
-# Swagger: http://localhost:5000/swagger
 ```
 
 ## Rodar com Docker (recomendado)
 ```bash
-# da raiz (compose geral com frontend):
-cp ../.env.example ../.env   # ou cp .env.example .env se estiver em backend/
-docker compose up --build
-# ou a partir de backend/:
+# da raiz (compose canônico com frontend):
 cp .env.example .env
+docker compose up --build
+# ou a partir de backend/ (o compose lê backend/.env para interpolar as variáveis):
+cp ../.env.example .env
 docker compose up --build
 # api: http://localhost:5000/swagger
 # frontend: http://localhost:3000 (nginx + proxy /api → api:8080)
 # postgres: localhost:5432 (vagalume / Vagalume@123)
 ```
 
-`docker-compose.yml`: `postgres` com healthcheck `pg_isready`, volume `postgres_data`, `api` depende `service_healthy`, `frontend` (nginx) depende `api`, volume `uploads_data:/app/uploads`. O `docker-compose.yml` da **raiz** (`../docker-compose.yml`) é o compose geral canônico — `backend/docker-compose.yml` espelha o mesmo stack com `context: ../frontend` para rodar de dentro de `backend/`.
+`docker-compose.yml`: `postgres` com healthcheck `pg_isready`, volume `postgres_data`, `api` depende `service_healthy`, `frontend` (nginx) depende `api`, volume `uploads_data:/app/uploads`. O serviço `api` usa `env_file: .env` (sem segredos embutidos no compose) e só sobrescreve a connection string para `Host=postgres`. O `docker-compose.yml` da **raiz** (`../docker-compose.yml`) é o compose geral canônico — `backend/docker-compose.yml` espelha o mesmo stack com `context: ../frontend` para rodar de dentro de `backend/`.
 
 Migrations são aplicadas no startup (`db.Database.Migrate()`).
 

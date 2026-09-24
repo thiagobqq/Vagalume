@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-vagalume}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-Vagalume@123}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}"
       POSTGRES_DB: "${POSTGRES_DB:-vagalume}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -24,11 +24,11 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-vagalume};Username=${POSTGRES_USER:-vagalume};Password=${POSTGRES_PASSWORD:-Vagalume@123}"
-      Jwt__Key: "${JWT_KEY:-chave-super-secreta-de-32-caracteres!!-vagalume-dev}"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-vagalume};Username=${POSTGRES_USER:-vagalume};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}"
+      Jwt__Key: "${JWT_KEY:?defina JWT_KEY}"
       Jwt__Issuer: "${JWT_ISSUER:-vagalume}"
       Jwt__Audience: "${JWT_AUDIENCE:-vagalume}"
-      Seguranca__ChaveCripto: "${SEGURANCA_CHAVE_CRIPTO:-troque-este-segredo-em-producao}"
+      Seguranca__ChaveCripto: "${SEGURANCA_CHAVE_CRIPTO:?defina SEGURANCA_CHAVE_CRIPTO}"
       Ia__Presets__OllamaBaseUrl: "${IA_PRESETS_OLLAMA_BASE_URL:-}"
       Uploads__BasePath: "/app/uploads"
     volumes:
