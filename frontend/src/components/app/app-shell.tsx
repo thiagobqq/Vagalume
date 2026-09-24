@@ -52,7 +52,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background">
+    <div className="flex h-dvh flex-col overflow-hidden">
       <header className="sticky top-0 z-40 border-b-[1.5px] border-ink bg-[var(--nb-paper)]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center gap-3 px-4 sm:px-6">
           <Brand />

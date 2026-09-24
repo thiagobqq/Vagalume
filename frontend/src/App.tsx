@@ -1,4 +1,5 @@
 import { AppShell } from "./components/app/app-shell"
+import { Fireflies } from "./components/app/fireflies"
 import { Landing } from "./pages/landing"
 import { Dashboard } from "./pages/dashboard"
 import { CurriculosPage } from "./pages/curriculos"
@@ -16,6 +17,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 export default function App() {
   return (
     <ThemeProvider>
+      <Fireflies />
       <AuthProvider>
         <BrowserRouter>
           <Routes>

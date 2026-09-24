@@ -145,7 +145,7 @@ function KanbanPreview() {
 
 export function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <AppHeader />
 
       <main className="mx-auto max-w-6xl space-y-20 px-4 py-12 sm:px-6 sm:py-16">
