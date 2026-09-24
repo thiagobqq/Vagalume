@@ -11,7 +11,7 @@ type NotebookPanelProps = Omit<React.HTMLAttributes<HTMLDivElement>, "title"> & 
   actions?: React.ReactNode
   /** cor da aba/marcador post-it (aceita qualquer cor CSS; default: --primary) */
   headerColor?: string
-  /** furos de fichário na margem esquerda (default: true) */
+  /** furos de fichário na margem esquerda (default: false) */
   holes?: boolean
   /** pauta (linhas de caderno) sutil ao fundo (default: false) */
   ruled?: boolean
@@ -22,8 +22,8 @@ type NotebookPanelProps = Omit<React.HTMLAttributes<HTMLDivElement>, "title"> & 
 
 /**
  * Container "folha de caderno" reutilizável do Design System Vagalume.
- * Aplica borda tinta, sombra dura, cantos arredondados, furos de fichário
- * na margem esquerda e, opcionalmente, pauta e fita washi.
+ * Aplica borda tinta, sombra dura, cantos arredondados e, opcionalmente,
+ * furos de fichário, pauta e fita washi.
  */
 export function NotebookPanel({
   title,
@@ -31,7 +31,7 @@ export function NotebookPanel({
   badge,
   actions,
   headerColor,
-  holes = true,
+  holes = false,
   ruled = false,
   tape = false,
   className,

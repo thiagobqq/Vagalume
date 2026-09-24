@@ -1,8 +1,7 @@
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
 import { ExternalLink, Clock3 } from "lucide-react"
-import type { CandidaturaDto, Status } from "@/features/candidaturas/types"
-import { STATUS_STYLE } from "@/features/candidaturas/status-style"
+import type { CandidaturaDto } from "@/features/candidaturas/types"
 import { cn } from "@/lib/utils"
 
 function daysSince(iso: string) {
@@ -20,7 +19,6 @@ export function ApplicationCard({
 }) {
   const days = daysSince(app.criadoEm)
   const needsFollowUp = days >= 7 && app.status !== "Encerrado" && app.status !== "Oferta"
-  const style = STATUS_STYLE[(app.status as Status) || "Aplicado"]
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: app.id,
@@ -86,15 +84,6 @@ export function ApplicationCard({
           {new Date(app.criadoEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
         </span>
       </div>
-
-      {app.observacoes && (
-        <p
-          className="line-clamp-2 rounded-md border-l-2 py-0.5 pl-2 text-xs leading-snug text-foreground/70"
-          style={{ borderColor: `color-mix(in srgb, ${style.strong} 45%, transparent)` }}
-        >
-          {app.observacoes}
-        </p>
-      )}
 
       {needsFollowUp && (
         <div

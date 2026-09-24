@@ -34,12 +34,6 @@ export function KanbanColumn({
           isOver && "ring-4 ring-primary/60"
         )}
       >
-        {/* furinhos de fichário */}
-        <div
-          className="spiral-holes pointer-events-none absolute inset-y-0 left-0 z-0 hidden w-6 border-r-[1.5px] border-ink/10 bg-[var(--nb-paper)]/50 sm:block"
-          aria-hidden="true"
-        />
-
         {/* pauta sutil */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.05]"
@@ -49,7 +43,7 @@ export function KanbanColumn({
           aria-hidden="true"
         />
 
-        <div className="relative z-20 flex items-center justify-between gap-2 border-b-[1.5px] border-ink/15 bg-card/70 px-4 py-3 backdrop-blur-sm sm:pl-8">
+        <div className="relative z-20 flex items-center justify-between gap-2 border-b-[1.5px] border-ink/15 bg-card/70 px-4 py-3 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <span className="h-3 w-3 rounded-full border border-ink/20" style={{ background: dot }} />
             <h3 className="text-[13px] font-extrabold tracking-tight">{STATUS_LABEL[status]}</h3>
@@ -59,7 +53,7 @@ export function KanbanColumn({
           </span>
         </div>
 
-        <div className="relative z-20 flex min-h-[440px] flex-1 flex-col gap-3 p-3 sm:pl-8">
+        <div className="relative z-20 flex min-h-[440px] flex-1 flex-col gap-3 p-3">
           {apps.length === 0 ? (
             <div className="grid flex-1 place-items-center rounded-xl border-[1.5px] border-dashed border-ink/25 bg-card/50 px-4 py-8 text-center">
               <div>
