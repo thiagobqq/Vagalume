@@ -24,8 +24,6 @@ backend/
 │   ├── Vagalume.Application/  # DTOs, envelope, mappings, validators
 │   ├── Vagalume.Infra/        # DbContext, configs, migrations, providers
 │   └── Vagalume.Api/          # Controllers, Program.cs, Swagger, JWT
-├── docker-compose.yml
-├── .env.example
 └── global.json
 ```
 
@@ -82,18 +80,15 @@ export Seguranca__ChaveCripto="troque-este-segredo-em-producao"   # cifra a API 
 
 ## Rodar com Docker (recomendado)
 ```bash
-# da raiz (compose canônico com frontend):
+# da raiz do repositório (compose canônico com frontend):
 cp .env.example .env
-docker compose up --build
-# ou a partir de backend/ (o compose lê backend/.env para interpolar as variáveis):
-cp ../.env.example .env
 docker compose up --build
 # api: http://localhost:5000/swagger
 # frontend: http://localhost:3000 (nginx + proxy /api → api:8080)
 # postgres: localhost:5432 (vagalume / Vagalume@123)
 ```
 
-`docker-compose.yml`: `postgres` com healthcheck `pg_isready`, volume `postgres_data`, `api` depende `service_healthy`, `frontend` (nginx) depende `api`, volume `uploads_data:/app/uploads`. O serviço `api` usa `env_file: .env` (sem segredos embutidos no compose) e só sobrescreve a connection string para `Host=postgres`. O `docker-compose.yml` da **raiz** (`../docker-compose.yml`) é o compose geral canônico — `backend/docker-compose.yml` espelha o mesmo stack com `context: ../frontend` para rodar de dentro de `backend/`.
+`../docker-compose.yml` (raiz) é o compose geral canônico: `postgres` com healthcheck `pg_isready`, volume `postgres_data`, `api` depende `service_healthy`, `frontend` (nginx) depende `api`, volume `uploads_data:/app/uploads`. O serviço `api` usa `env_file: .env` (sem segredos embutidos no compose) e só sobrescreve a connection string para `Host=postgres`.
 
 Migrations são aplicadas no startup (`db.Database.Migrate()`).
 
