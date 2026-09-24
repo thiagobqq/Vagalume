@@ -37,6 +37,10 @@ O backend carrega o `.env` procurando no diretório atual e nos diretórios pais
 # App
 ASPNETCORE_ENVIRONMENT=Development
 
+# Seed do admin (somente Development; sem estas variáveis o admin não é criado)
+Seed__Admin__Email=admin@vagalume.dev
+Seed__Admin__Senha=admin123
+
 # Banco (no docker o compose sobrescreve o Host para "postgres")
 ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=vagalume;Username=vagalume;Password=Vagalume@123
 

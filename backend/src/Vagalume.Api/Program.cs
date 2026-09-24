@@ -237,39 +237,48 @@ using (var scope = app.Services.CreateScope())
     {
         try
         {
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-            var email = app.Configuration["Seed:Admin:Email"] ?? "admin@vagalume.dev";
-            var senha = app.Configuration["Seed:Admin:Senha"] ?? "admin123";
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            var email = app.Configuration["Seed:Admin:Email"];
+            var senha = app.Configuration["Seed:Admin:Senha"];
 
-            var admin = await userManager.FindByEmailAsync(email);
-            if (admin is null)
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(senha))
             {
-                admin = new AppUser
-                {
-                    Id = Guid.NewGuid(),
-                    Nome = "Admin",
-                    UserName = email,
-                    Email = email,
-                    EmailConfirmed = true
-                };
-                var criado = await userManager.CreateAsync(admin, senha);
-                if (!criado.Succeeded)
-                    throw new InvalidOperationException(string.Join("; ", criado.Errors.Select(e => e.Description)));
+                logger.LogInformation("Seed do admin ignorado: defina Seed__Admin__Email e Seed__Admin__Senha no .env");
             }
-
-            var jaTemPermissao = await db.UsuarioPermissoes
-                .AnyAsync(p => p.UsuarioId == admin.Id && p.Chave == Permissoes.Admin);
-            if (!jaTemPermissao)
+            else
             {
-                db.UsuarioPermissoes.Add(new UsuarioPermissao
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+                var admin = await userManager.FindByEmailAsync(email);
+                if (admin is null)
                 {
-                    Id = Guid.NewGuid(),
-                    UsuarioId = admin.Id,
-                    Chave = Permissoes.Admin,
-                    ConcedidoEm = DateTime.UtcNow,
-                    Origem = OrigemPermissao.Manual
-                });
-                await db.SaveChangesAsync();
+                    admin = new AppUser
+                    {
+                        Id = Guid.NewGuid(),
+                        Nome = "Admin",
+                        UserName = email,
+                        Email = email,
+                        EmailConfirmed = true
+                    };
+                    var criado = await userManager.CreateAsync(admin, senha);
+                    if (!criado.Succeeded)
+                        throw new InvalidOperationException(string.Join("; ", criado.Errors.Select(e => e.Description)));
+                }
+
+                var jaTemPermissao = await db.UsuarioPermissoes
+                    .AnyAsync(p => p.UsuarioId == admin.Id && p.Chave == Permissoes.Admin);
+                if (!jaTemPermissao)
+                {
+                    db.UsuarioPermissoes.Add(new UsuarioPermissao
+                    {
+                        Id = Guid.NewGuid(),
+                        UsuarioId = admin.Id,
+                        Chave = Permissoes.Admin,
+                        ConcedidoEm = DateTime.UtcNow,
+                        Origem = OrigemPermissao.Manual
+                    });
+                    await db.SaveChangesAsync();
+                }
             }
         }
         catch (Exception ex)
