@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Vagalume.Domain.Abstractions;
+using Vagalume.Domain.Authorization;
 using Vagalume.Domain.Entities;
+using Vagalume.Domain.Enums;
 using Vagalume.Infra.Data;
 
 namespace Vagalume.Api.BackgroundServices;
@@ -21,6 +23,7 @@ public class BuscaEnfileirador
     private readonly IDateTimeProvider _clock;
     private readonly IBuscaQueue _fila;
     private readonly BuscaExecucaoCoordinator _coordenador;
+    private readonly IEntitlementService _entitlements;
     private readonly ILogger<BuscaEnfileirador> _logger;
 
     public BuscaEnfileirador(
@@ -28,12 +31,14 @@ public class BuscaEnfileirador
         IDateTimeProvider clock,
         IBuscaQueue fila,
         BuscaExecucaoCoordinator coordenador,
+        IEntitlementService entitlements,
         ILogger<BuscaEnfileirador> logger)
     {
         _db = db;
         _clock = clock;
         _fila = fila;
         _coordenador = coordenador;
+        _entitlements = entitlements;
         _logger = logger;
     }
 
@@ -49,8 +54,10 @@ public class BuscaEnfileirador
         if (emAndamento is not null)
             return new ResultadoEnfileiramento(StatusEnfileiramento.EmAndamento, emAndamento);
 
+        var verificado = await _entitlements.HasAsync(usuarioId, Permissoes.VerifyUser);
         var temPerfil = await _db.PerfisBusca.AnyAsync(p => p.UsuarioId == usuarioId, ct);
-        var temFonte = await _db.FontesBusca.AnyAsync(f => f.UsuarioId == usuarioId && f.Ativo, ct);
+        var temFonte = await _db.FontesBusca.AnyAsync(f =>
+            f.UsuarioId == usuarioId && f.Ativo && (verificado || f.Tipo == FonteTipo.Trampos), ct);
         if (!temPerfil || !temFonte)
             return new ResultadoEnfileiramento(StatusEnfileiramento.SemConfiguracao, null);
 

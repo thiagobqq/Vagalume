@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Vagalume.Domain.Abstractions;
+using Vagalume.Domain.Authorization;
 using Vagalume.Domain.Busca;
 using Vagalume.Domain.Entities;
 using Vagalume.Domain.Enums;
@@ -18,6 +19,7 @@ public class ColetaVagasService : IBuscaVagasService
     private readonly DedupService _dedup;
     private readonly FiltroVagaService _filtro;
     private readonly INotificadorBusca _notificador;
+    private readonly IEntitlementService _entitlements;
     private readonly ILogger<ColetaVagasService> _logger;
     private readonly TimeSpan _timeoutFonte;
 
@@ -28,6 +30,7 @@ public class ColetaVagasService : IBuscaVagasService
         DedupService dedup,
         FiltroVagaService filtro,
         INotificadorBusca notificador,
+        IEntitlementService entitlements,
         IConfiguration config,
         ILogger<ColetaVagasService> logger)
     {
@@ -37,6 +40,7 @@ public class ColetaVagasService : IBuscaVagasService
         _dedup = dedup;
         _filtro = filtro;
         _notificador = notificador;
+        _entitlements = entitlements;
         _logger = logger;
         _timeoutFonte = TimeSpan.FromSeconds(Math.Clamp(config.GetValue("Busca:TimeoutFonteSegundos", 60), 10, 600));
     }
@@ -69,9 +73,12 @@ public class ColetaVagasService : IBuscaVagasService
                 return execucao;
             }
 
-            var fontes = await _db.FontesBusca
+            var verificado = await _entitlements.HasAsync(usuarioId, Permissoes.VerifyUser);
+            var fontes = (await _db.FontesBusca
                 .Where(f => f.UsuarioId == usuarioId && f.Ativo)
-                .ToListAsync(ct);
+                .ToListAsync(ct))
+                .Where(f => AcessoFonte.Permitida(f.Tipo, verificado))
+                .ToList();
 
             var indice = await _dedup.CarregarIndiceAsync(usuarioId, ct);
             var novas = new List<Vaga>();

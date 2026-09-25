@@ -7,7 +7,6 @@ using Vagalume.Application.DTOs;
 using Vagalume.Application.Mappings;
 using Vagalume.Application.Validators;
 using Vagalume.Domain.Abstractions;
-using Vagalume.Domain.Authorization;
 using Vagalume.Domain.Entities;
 using Vagalume.Domain.Enums;
 using Vagalume.Infra.Data;
@@ -16,7 +15,7 @@ namespace Vagalume.Api.Controllers;
 
 [ApiController]
 [Route("api/vagas")]
-[Authorize(Policy = Permissoes.VerifyUser)]
+[Authorize]
 public class VagasController : ControllerBase
 {
     private readonly AppDbContext _db;
