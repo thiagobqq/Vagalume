@@ -18,18 +18,20 @@ namespace Vagalume.Api.Controllers;
 
 [ApiController]
 [Route("api/busca")]
-[Authorize(Policy = Permissoes.VerifyUser)]
+[Authorize]
 public class BuscaController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IDateTimeProvider _clock;
     private readonly BuscaEnfileirador _enfileirador;
+    private readonly IEntitlementService _entitlements;
 
-    public BuscaController(AppDbContext db, IDateTimeProvider clock, BuscaEnfileirador enfileirador)
+    public BuscaController(AppDbContext db, IDateTimeProvider clock, BuscaEnfileirador enfileirador, IEntitlementService entitlements)
     {
         _db = db;
         _clock = clock;
         _enfileirador = enfileirador;
+        _entitlements = entitlements;
     }
 
     [HttpGet("perfil")]
@@ -122,6 +124,10 @@ public class BuscaController : ControllerBase
         if (!EnumValidator.TryParseFonteTipo(req.Tipo, out var tipo))
             return BadRequest(GenericResponseData<object>.Fail($"Tipo inválido. Valores permitidos: {EnumValidator.FonteTipoValores}"));
 
+        var usuarioId = User.GetUserId();
+        if (!await FontePermitidaAsync(usuarioId, tipo))
+            return StatusCode(403, GenericResponseData<object>.Fail("Esta fonte é exclusiva para usuários verificados"));
+
         var identificador = string.IsNullOrWhiteSpace(req.Identificador) ? null : req.Identificador.Trim();
         if (tipo == FonteTipo.Rss && identificador is null)
             return BadRequest(GenericResponseData<object>.Fail("RSS exige a URL do feed em 'identificador'"));
@@ -129,7 +135,7 @@ public class BuscaController : ControllerBase
         var fonte = new FonteBusca
         {
             Id = Guid.NewGuid(),
-            UsuarioId = User.GetUserId(),
+            UsuarioId = usuarioId,
             Tipo = tipo,
             Identificador = identificador,
             NomeEmpresa = string.IsNullOrWhiteSpace(req.NomeEmpresa) ? null : req.NomeEmpresa.Trim(),
@@ -153,6 +159,9 @@ public class BuscaController : ControllerBase
         var fonte = await _db.FontesBusca.FirstOrDefaultAsync(f => f.Id == id && f.UsuarioId == usuarioId);
         if (fonte is null)
             return NotFound(GenericResponseData<object>.Fail("Fonte não encontrada"));
+
+        if (!await FontePermitidaAsync(usuarioId, fonte.Tipo))
+            return StatusCode(403, GenericResponseData<object>.Fail("Esta fonte é exclusiva para usuários verificados"));
 
         if (req.Identificador is not null && !string.IsNullOrWhiteSpace(req.Identificador))
             fonte.Identificador = req.Identificador.Trim();
@@ -235,6 +244,13 @@ public class BuscaController : ControllerBase
             .ToListAsync();
 
         return Ok(GenericResponseData<List<ExecucaoBuscaDto>>.Ok(execucoes.Select(BuscaMapping.ToDto).ToList()));
+    }
+
+    private async Task<bool> FontePermitidaAsync(Guid usuarioId, FonteTipo tipo)
+    {
+        if (!AcessoFonte.RequerVerificacao(tipo))
+            return true;
+        return await _entitlements.HasAsync(usuarioId, Permissoes.VerifyUser);
     }
 
     private static List<string> Limpar(List<string>? itens)

@@ -364,7 +364,7 @@ export function Landing() {
           <div className="space-y-3">
             <Faq q="Preciso configurar IA pra usar?">
               Não. O caderno, os currículos e a busca de vagas funcionam sem IA nenhuma. A análise de compatibilidade é
-              opcional — e, quando você quiser usar, conecta a sua própria chave em Configurações.
+              opcional — e, quando você quiser usar, conecta a sua própria chave em Currículos.
             </Faq>
             <Faq q="É grátis mesmo?">
               Começar é de graça. Como a análise de IA usa a sua chave, você paga direto ao provedor que escolher, só

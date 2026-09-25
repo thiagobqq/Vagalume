@@ -136,7 +136,7 @@ export function CompatibilidadeDialog({
               {erro}
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
-              <Link to="/app/configuracoes" className="font-semibold underline underline-offset-2">
+              <Link to="/app/curriculos" className="font-semibold underline underline-offset-2">
                 Configurar provedor de IA
               </Link>
               <span className="text-muted-foreground">·</span>

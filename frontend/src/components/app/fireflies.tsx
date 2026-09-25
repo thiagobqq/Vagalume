@@ -1,4 +1,5 @@
 import { useMemo } from "react"
+import { useTheme } from "@/features/theme/theme-provider"
 
 type Firefly = {
   left: number
@@ -28,7 +29,10 @@ function makeFireflies(count: number): Firefly[] {
 }
 
 export function Fireflies({ count = 35 }: { count?: number }) {
+  const { firefliesEnabled } = useTheme()
   const flies = useMemo(() => makeFireflies(count), [count])
+
+  if (!firefliesEnabled) return null
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">

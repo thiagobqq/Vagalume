@@ -3,7 +3,6 @@ import { Fireflies } from "./components/app/fireflies"
 import { Landing } from "./pages/landing"
 import { Dashboard } from "./pages/dashboard"
 import { CurriculosPage } from "./pages/curriculos"
-import { ConfiguracoesPage } from "./pages/configuracoes"
 import { VagasPage } from "./pages/vagas"
 import { AdminPage } from "./pages/admin"
 import { Login } from "./pages/login"
@@ -31,19 +30,18 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="curriculos" element={<CurriculosPage />} />
               <Route
-                path="configuracoes"
+                path="curriculos"
                 element={
-                  <ProtectedRoute permissao={PERMISSOES.verifyUser}>
-                    <ConfiguracoesPage />
+                  <ProtectedRoute>
+                    <CurriculosPage />
                   </ProtectedRoute>
                 }
               />
               <Route
                 path="vagas"
                 element={
-                  <ProtectedRoute permissao={PERMISSOES.verifyUser}>
+                  <ProtectedRoute>
                     <VagasPage />
                   </ProtectedRoute>
                 }

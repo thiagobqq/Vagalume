@@ -25,3 +25,4 @@ Decisões de arquitetura do backend do Analista de Busca de Emprego. Cada ADR é
 | [0019](ADR-0019-gap-analysis-curriculo-vaga-ia.md) | Gap-analysis currículo × vaga com IA | Aceito |
 | [0020](ADR-0020-byok-provedor-de-ia-do-usuario.md) | Provedor de IA do usuário (BYOK), presets e cifragem da chave | Aceito |
 | [0021](ADR-0021-linkedin-como-fonte-de-vagas.md) | LinkedIn como fonte de vagas (revisa o ADR-0016) | Aceito |
+| [0022](ADR-0022-analise-ats-do-curriculo.md) | Análise ATS do currículo (somente IA, por currículo) | Aceito |

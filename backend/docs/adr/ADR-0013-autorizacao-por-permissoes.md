@@ -28,3 +28,7 @@ Autorização de "quem pode acessar" não é a mesma coisa que "quem pagou". Tra
 - Exclusão de usuário remove as permissões em cascata (FK).
 - Sem cache: cada verificação faz uma query. Se virar hot path, entra cache com invalidação em ADR futuro.
 - Frontend (`useAuth().hasPermissao`, `ProtectedRoute permissao=`, nav condicional) é UX apenas; a segurança real está no backend.
+
+## Atualização
+
+- **ADR-0023** reduz o escopo de `verify_user`: currículos, inbox de vagas e a busca pela fonte `Trampos` passam a ser liberados para qualquer usuário autenticado. `verify_user` continua governando IA/ATS/compatibilidade e as demais fontes de busca.

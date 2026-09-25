@@ -98,8 +98,7 @@ Vagalume/
 ├── .env.example
 ├── backend/                # .NET API (ver backend/README.md)
 │   ├── src/Vagalume.Api/
-│   ├── src/Vagalume.Infra/
-│   └── docker-compose.yml  # também inclui frontend (context ../frontend)
+│   └── src/Vagalume.Infra/
 └── frontend/               # React SPA
     ├── src/lib/api.ts      # client envelope + refresh
     ├── src/features/auth/  # login/register/context

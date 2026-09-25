@@ -149,10 +149,12 @@ builder.Services.Configure<IaOptions>(builder.Configuration.GetSection("Ia"));
 builder.Services.AddSingleton<ICriptografiaService, CriptografiaAesGcm>();
 builder.Services.AddSingleton<CatalogoProvedoresIa>();
 builder.Services.AddScoped<IExtratorTextoPdf, ExtratorTextoPdfPdfPig>();
+builder.Services.AddScoped<ClienteChatIa>();
 builder.Services.AddScoped<IAnalisadorCompatibilidade, AnalisadorCompatibilidadeIa>();
+builder.Services.AddScoped<IAnalisadorAts, AnalisadorAtsIa>();
 
 var iaTimeout = builder.Configuration.GetValue("Ia:TimeoutSegundos", 50);
-builder.Services.AddHttpClient(AnalisadorCompatibilidadeIa.ClientName, client =>
+builder.Services.AddHttpClient(ClienteChatIa.ClientName, client =>
 {
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(iaTimeout, 5, 120));
 });
