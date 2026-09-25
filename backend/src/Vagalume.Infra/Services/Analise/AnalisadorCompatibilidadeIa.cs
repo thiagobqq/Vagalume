@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
@@ -11,16 +10,14 @@ namespace Vagalume.Infra.Services.Analise;
 
 public class AnalisadorCompatibilidadeIa : IAnalisadorCompatibilidade
 {
-    public const string ClientName = "ia";
-
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    private readonly IHttpClientFactory _factory;
+    private readonly ClienteChatIa _cliente;
     private readonly IaOptions _options;
 
-    public AnalisadorCompatibilidadeIa(IHttpClientFactory factory, IOptions<IaOptions> options)
+    public AnalisadorCompatibilidadeIa(ClienteChatIa cliente, IOptions<IaOptions> options)
     {
-        _factory = factory;
+        _cliente = cliente;
         _options = options.Value;
     }
 
@@ -47,99 +44,19 @@ public class AnalisadorCompatibilidadeIa : IAnalisadorCompatibilidade
             .AppendLine(curriculo)
             .ToString();
 
-        var content = await EnviarAsync(provedor, SystemPrompt, user, jsonMode: true, ct);
+        var content = await _cliente.EnviarAsync(provedor, SystemPrompt, user, jsonMode: true, ct);
         return Interpretar(content);
     }
 
     public Task TestarAsync(ProvedorIaConfig provedor, CancellationToken ct = default)
-        => EnviarAsync(provedor, "Você é um assistente de teste de conexão.", "Responda apenas com a palavra: ok", jsonMode: false, ct);
-
-    private async Task<string> EnviarAsync(
-        ProvedorIaConfig provedor,
-        string system,
-        string user,
-        bool jsonMode,
-        CancellationToken ct)
-    {
-        var client = _factory.CreateClient(ClientName);
-        var url = $"{provedor.BaseUrl.TrimEnd('/')}/chat/completions";
-
-        var payload = new Dictionary<string, object?>
-        {
-            ["model"] = provedor.Modelo,
-            ["temperature"] = 0.2,
-            ["messages"] = new object[]
-            {
-                new Dictionary<string, object?> { ["role"] = "system", ["content"] = system },
-                new Dictionary<string, object?> { ["role"] = "user", ["content"] = user }
-            }
-        };
-        if (_options.MaxTokens > 0)
-            payload["max_tokens"] = _options.MaxTokens;
-        if (jsonMode)
-            payload["response_format"] = new Dictionary<string, object?> { ["type"] = "json_object" };
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
-        };
-        if (!string.IsNullOrWhiteSpace(provedor.ApiKey))
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", provedor.ApiKey);
-
-        HttpResponseMessage response;
-        try
-        {
-            response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        }
-        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
-        {
-            throw new AnalisadorIaException("O provedor de IA excedeu o tempo limite.");
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new AnalisadorIaException($"Falha ao contatar o provedor de IA: {ex.Message}");
-        }
-
-        using (response)
-        {
-            var body = await response.Content.ReadAsStringAsync(ct);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var detalhe = ExtrairErro(body);
-                var mensagem = (int)response.StatusCode is 401 or 403
-                    ? "Chave de IA inválida ou sem permissão no provedor."
-                    : $"Provedor de IA retornou erro {(int)response.StatusCode}. {detalhe}".Trim();
-                throw new AnalisadorIaException(mensagem, (int)response.StatusCode);
-            }
-
-            try
-            {
-                using var doc = JsonDocument.Parse(body);
-                var content = doc.RootElement
-                    .GetProperty("choices")[0]
-                    .GetProperty("message")
-                    .GetProperty("content")
-                    .GetString();
-
-                if (string.IsNullOrWhiteSpace(content))
-                    throw new AnalisadorIaException("O provedor de IA retornou uma resposta vazia.");
-
-                return content;
-            }
-            catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
-            {
-                throw new AnalisadorIaException("Não foi possível interpretar a resposta do provedor de IA.");
-            }
-        }
-    }
+        => _cliente.EnviarAsync(provedor, "Você é um assistente de teste de conexão.", "Responda apenas com a palavra: ok", jsonMode: false, ct);
 
     internal static ResultadoAnaliseCompatibilidade Interpretar(string content)
     {
         RespostaAnalise? resposta;
         try
         {
-            resposta = JsonSerializer.Deserialize<RespostaAnalise>(ExtrairJson(content), JsonOpts);
+            resposta = JsonSerializer.Deserialize<RespostaAnalise>(ClienteChatIa.ExtrairJson(content), JsonOpts);
         }
         catch (JsonException)
         {
@@ -170,46 +87,11 @@ public class AnalisadorCompatibilidadeIa : IAnalisadorCompatibilidade
         };
     }
 
-    internal static string ExtrairJson(string content)
-    {
-        var texto = content.Trim();
-        if (texto.StartsWith("```", StringComparison.Ordinal))
-        {
-            var inicio = texto.IndexOf('{');
-            var fim = texto.LastIndexOf('}');
-            if (inicio >= 0 && fim > inicio)
-                return texto[inicio..(fim + 1)];
-        }
-        return texto;
-    }
+    internal static string ExtrairJson(string content) => ClienteChatIa.ExtrairJson(content);
 
-    internal static string ExtrairErro(string body)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(body);
-            if (doc.RootElement.TryGetProperty("error", out var erro))
-            {
-                if (erro.ValueKind == JsonValueKind.String)
-                    return erro.GetString() ?? string.Empty;
-                if (erro.TryGetProperty("message", out var msg))
-                    return msg.GetString() ?? string.Empty;
-            }
-        }
-        catch
-        {
-            // corpo não-JSON: ignora
-        }
-        return string.Empty;
-    }
+    internal static string ExtrairErro(string body) => ClienteChatIa.ExtrairErro(body);
 
-    internal static string Truncar(string? texto, int max)
-    {
-        if (string.IsNullOrWhiteSpace(texto))
-            return string.Empty;
-        var t = texto.Trim();
-        return t.Length <= max ? t : t[..max];
-    }
+    internal static string Truncar(string? texto, int max) => ClienteChatIa.Truncar(texto, max);
 
     private const string SystemPrompt = """
 Você é um analista de recrutamento técnico. Compare o CURRÍCULO do candidato com a VAGA e avalie a aderência.

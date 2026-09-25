@@ -16,4 +16,5 @@ public class AppUser : IdentityUser<Guid>
     public PerfilBusca? PerfilBusca { get; set; }
     public ConfiguracaoIa? ConfiguracaoIa { get; set; }
     public ICollection<AnaliseCompatibilidade> AnalisesCompatibilidade { get; set; } = new List<AnaliseCompatibilidade>();
+    public ICollection<AnaliseAts> AnalisesAts { get; set; } = new List<AnaliseAts>();
 }

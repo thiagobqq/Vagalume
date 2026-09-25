@@ -48,6 +48,8 @@ backend/
 | POST | `/api/ia/testar` | sim¹ | testa a conexão com o provedor |
 | GET | `/api/vagas/{id}/compatibilidade` | sim¹ | análise de compatibilidade existente |
 | POST | `/api/vagas/{id}/compatibilidade` | sim¹ | gera/regera gap-analysis currículo × vaga |
+| GET | `/api/curriculos/{id}/analise-ats` | sim¹ | análise ATS existente do currículo |
+| POST | `/api/curriculos/{id}/analise-ats` | sim¹ | gera/regera análise ATS do currículo |
 
 ¹ Policy `verify_user` (ADR-0013/0019/0020).
 
@@ -64,6 +66,7 @@ backend/
 - `Vaga`: oportunidade descoberta pela busca (`Titulo`, `Empresa`, `Url`, `Descricao`, `Status`, dedup) — inbox separada das candidaturas (ADRs 0014–0017)
 - `ConfiguracaoIa`: provedor de IA do usuário (BYOK) — `Provedor`, `Modelo`, `ApiKeyCriptografada` (AES-256-GCM), `Ativo` (ADR-0020)
 - `AnaliseCompatibilidade`: gap-analysis currículo ativo × vaga — `Score`, `Resumo`, `Requisitos`, `Sugestoes`, `CurriculoId`, único por `(UsuarioId, VagaId)` (ADR-0019)
+- `AnaliseAts`: análise ATS do currículo — `Score`, `Resumo`, `Categorias`, `Alertas`, `PontosFortes`, `Sugestoes`, `CurriculoId`, único por `(UsuarioId, CurriculoId)` (ADR-0022)
 
 ## Rodar local (sem Docker, precisa PostgreSQL)
 ```bash
