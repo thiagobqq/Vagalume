@@ -22,7 +22,7 @@ Termos de domínio do backend do Analista de Busca de Emprego. Definições norm
 
 **Currículo Ativo** — O currículo que o sistema considera "o atual" do usuário; alvo das features de comparação (gap-analysis). Invariante: um e apenas um ativo por usuário. [ADR-0008]
 
-**Fonte de Busca** — Origem de vagas configurada pelo usuário (`FonteBusca`): tipo (`Gupy, Trampos, Programathor, InfoJobs, Catho, LinkedIn, Rss`), identificador opcional (Gupy = slug de empresa; RSS = URL do feed; LinkedIn = localização), nome da empresa opcional e ativo/inativo. Gupy e Trampos usam APIs públicas; Programathor/InfoJobs/Catho/LinkedIn usam scraping HTML; RSS é genérico. [ADR-0015, ADR-0016, ADR-0021]
+**Fonte de Busca** — Origem de vagas configurada pelo usuário (`FonteBusca`): tipo (`Gupy, Trampos, Programathor, InfoJobs, Catho, LinkedIn, Rss`), identificador opcional (Gupy = slug de empresa; RSS = URL do feed; LinkedIn = localização), nome da empresa opcional e ativo/inativo. Gupy e Trampos usam APIs públicas; Programathor/InfoJobs/Catho/LinkedIn usam scraping HTML; RSS é genérico. Apenas **Trampos** é liberada para usuário não verificado; as demais exigem `verify_user`. [ADR-0015, ADR-0016, ADR-0021, ADR-0023]
 
 **Perfil de Busca** — Critérios e agenda do usuário para a busca automática (`PerfilBusca`): palavras-chave, tecnologias, níveis, modalidades, exclusões, localização, como combinar os termos (`Qualquer`/`Todos`), hora e dias de execução, fuso e webhook do Discord. [ADR-0015]
 
