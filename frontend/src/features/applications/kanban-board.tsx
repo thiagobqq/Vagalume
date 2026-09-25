@@ -11,7 +11,10 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core"
 import type { CandidaturaDto, Status } from "@/features/candidaturas/types"
-import { STATUS_ORDER, STATUS_VALUES } from "@/features/candidaturas/types"
+import { STATUS_LABEL, STATUS_ORDER, STATUS_VALUES } from "@/features/candidaturas/types"
+import { STATUS_STYLE } from "@/features/candidaturas/status-style"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useMediaQuery } from "@/hooks/use-media-query"
 import { KanbanColumn } from "./kanban-column"
 import { ApplicationCard } from "./application-card"
 
@@ -25,7 +28,9 @@ export function KanbanBoard({
   onOpenDetail?: (id: string) => void
 }) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<Status>("Aplicado")
   const suppressClick = useRef(false)
+  const isDesktop = useMediaQuery("(min-width: 1024px)")
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -97,11 +102,41 @@ export function KanbanBoard({
         clearSuppress()
       }}
     >
-      <div className="grid min-h-0 flex-1 grid-cols-1 content-start items-start gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:grid-rows-1">
-        {STATUS_ORDER.map((s) => (
-          <KanbanColumn key={s} status={s} apps={grouped[s]} onOpenDetail={handleOpenDetail} />
-        ))}
-      </div>
+      {isDesktop ? (
+        <div className="grid min-h-0 flex-1 grid-cols-5 grid-rows-1 content-start items-start gap-4">
+          {STATUS_ORDER.map((s) => (
+            <KanbanColumn key={s} status={s} apps={grouped[s]} onOpenDetail={handleOpenDetail} />
+          ))}
+        </div>
+      ) : (
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as Status)}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border-[1.5px] border-ink bg-card p-1 shadow-hard-xs">
+            {STATUS_ORDER.map((s) => (
+              <TabsTrigger key={s} value={s} className="shrink-0 gap-1.5 data-[state=active]:shadow-hard-xs">
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full border border-ink/20"
+                  style={{ background: STATUS_STYLE[s].dot }}
+                  aria-hidden="true"
+                />
+                {STATUS_LABEL[s]}
+                <span className="grid min-w-5 place-items-center rounded-full border border-ink/40 bg-card px-1.5 py-0.5 text-[11px] font-bold leading-none">
+                  {grouped[s].length}
+                </span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent
+            value={activeTab}
+            className="mt-3 flex min-h-0 flex-1 flex-col focus-visible:outline-none"
+          >
+            <KanbanColumn status={activeTab} apps={grouped[activeTab]} onOpenDetail={handleOpenDetail} />
+          </TabsContent>
+        </Tabs>
+      )}
 
       <DragOverlay dropAnimation={null}>
         {activeApp ? <ApplicationCard app={activeApp} overlay /> : null}

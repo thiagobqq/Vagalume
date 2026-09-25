@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, ExternalLink, Pencil } from "lucide-react"
 import type { CandidaturaDetalhadaDto, Origem, Status } from "./types"
-import { ORIGEM_VALUES } from "./types"
+import { ORIGEM_VALUES, STATUS_LABEL, STATUS_ORDER } from "./types"
 import { STATUS_STYLE } from "./status-style"
 import { atualizarCandidatura, obterCandidatura } from "./api"
 
@@ -34,12 +34,14 @@ type Props = {
   open: boolean
   onOpenChange: (o: boolean) => void
   onUpdated: () => void
+  onStatusChange: (status: Status) => Promise<void> | void
 }
 
-export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: Props) {
+export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated, onStatusChange }: Props) {
   const [data, setData] = useState<CandidaturaDetalhadaDto | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [movingStatus, setMovingStatus] = useState(false)
   const [editing, setEditing] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -106,6 +108,20 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
       setErr((e as Error).message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleStatusChange(next: Status) {
+    if (!id || !data || next === data.status) return
+    setMovingStatus(true)
+    setErr(null)
+    try {
+      await onStatusChange(next)
+      setData((d) => (d ? { ...d, status: next } : d))
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setMovingStatus(false)
     }
   }
 
@@ -191,14 +207,29 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
                 <Field label="Cargo">{data.cargo}</Field>
                 <Field label="Origem">{data.origem}</Field>
                 <Field label="Status">
-                  <Badge variant={STATUS_BADGE[(data.status as Status) || "Aplicado"]} className="gap-1.5">
-                    <span
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ background: STATUS_STYLE[(data.status as Status) || "Aplicado"].dot }}
-                      aria-hidden="true"
-                    />
-                    {data.status}
-                  </Badge>
+                  <Select
+                    value={(data.status as Status) || "Aplicado"}
+                    onValueChange={(v) => handleStatusChange(v as Status)}
+                    disabled={movingStatus}
+                  >
+                    <SelectTrigger className="h-8 w-full max-w-[220px] gap-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_ORDER.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              className="h-1.5 w-1.5 rounded-full"
+                              style={{ background: STATUS_STYLE[s].dot }}
+                              aria-hidden="true"
+                            />
+                            {STATUS_LABEL[s]}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </Field>
               </div>
 
@@ -234,6 +265,10 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated }: P
                   atualizado: {new Date(data.atualizadoEm).toLocaleString("pt-BR")}
                 </span>
               </div>
+
+              {err && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{err}</div>
+              )}
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => onOpenChange(false)}>fechar</Button>

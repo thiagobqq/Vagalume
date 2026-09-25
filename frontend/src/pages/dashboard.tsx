@@ -75,9 +75,14 @@ export function Dashboard() {
         )}
 
         {loading ? (
-          <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid shrink-0 grid-cols-1 gap-4 lg:grid-cols-5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-[480px] animate-pulse rounded-2xl border-[1.5px] border-ink/20 bg-muted/40" />
+              <div
+                key={i}
+                className={`h-[480px] animate-pulse rounded-2xl border-[1.5px] border-ink/20 bg-muted/40 ${
+                  i > 0 ? "hidden lg:block" : ""
+                }`}
+              />
             ))}
           </div>
         ) : (
@@ -93,6 +98,9 @@ export function Dashboard() {
           if (!o) setDetailId(null)
         }}
         onUpdated={refresh}
+        onStatusChange={async (status) => {
+          if (detailId) await move(detailId, status)
+        }}
       />
     </div>
   )
