@@ -161,15 +161,6 @@ function VagaCard({ vaga, onAplicar, onDescartar, onCompatibilidade }: {
           size="sm"
           className="gap-1.5"
           disabled={descartando}
-          onClick={onCompatibilidade}
-        >
-          <Wand2 className="h-3.5 w-3.5" /> compatibilidade
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          disabled={descartando}
           onClick={onAplicar}
         >
           <Check className="h-3.5 w-3.5" /> aplicar
@@ -189,6 +180,15 @@ function VagaCard({ vaga, onAplicar, onDescartar, onCompatibilidade }: {
           }}
         >
           {descartando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />} descartar
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto gap-1.5"
+          disabled={descartando}
+          onClick={onCompatibilidade}
+        >
+          <Wand2 className="h-3.5 w-3.5" /> compatibilidade
         </Button>
       </div>
     </NotebookCard>
