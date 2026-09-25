@@ -6,6 +6,7 @@ using Vagalume.Application.Common;
 using Vagalume.Application.DTOs;
 using Vagalume.Application.Mappings;
 using Vagalume.Domain.Abstractions;
+using Vagalume.Domain.Authorization;
 using Vagalume.Domain.Entities;
 using Vagalume.Infra.Data;
 using Vagalume.Infra.Services;
@@ -14,7 +15,7 @@ namespace Vagalume.Api.Controllers;
 
 [ApiController]
 [Route("api/curriculos")]
-[Authorize]
+[Authorize(Policy = Permissoes.VerifyUser)]
 public class CurriculosController : ControllerBase
 {
     private readonly AppDbContext _db;

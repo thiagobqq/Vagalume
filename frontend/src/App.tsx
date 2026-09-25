@@ -30,7 +30,14 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="curriculos" element={<CurriculosPage />} />
+              <Route
+                path="curriculos"
+                element={
+                  <ProtectedRoute permissao={PERMISSOES.verifyUser}>
+                    <CurriculosPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="vagas"
                 element={
