@@ -33,7 +33,7 @@ export default function App() {
               <Route
                 path="curriculos"
                 element={
-                  <ProtectedRoute permissao={PERMISSOES.verifyUser}>
+                  <ProtectedRoute>
                     <CurriculosPage />
                   </ProtectedRoute>
                 }
@@ -41,7 +41,7 @@ export default function App() {
               <Route
                 path="vagas"
                 element={
-                  <ProtectedRoute permissao={PERMISSOES.verifyUser}>
+                  <ProtectedRoute>
                     <VagasPage />
                   </ProtectedRoute>
                 }

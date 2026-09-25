@@ -13,6 +13,9 @@ import { useBuscaConfig } from "@/hooks/use-busca"
 import { useAplicacaoPendente } from "@/hooks/use-aplicacao-pendente"
 import { CompatibilidadeDialog } from "@/features/vagas/compatibilidade-dialog"
 import { ConfirmarAplicacaoDialog } from "@/features/vagas/confirmar-aplicacao-dialog"
+import { VerificacaoDialog } from "@/components/app/verificacao-dialog"
+import { useAuth } from "@/features/auth/auth-context"
+import { PERMISSOES } from "@/features/auth/permissoes"
 import {
   DIAS_LABEL,
   FONTE_HINT,
@@ -32,6 +35,7 @@ import {
   ExternalLink,
   Inbox,
   Loader2,
+  Lock,
   MapPin,
   Plus,
   RefreshCw,
@@ -47,6 +51,11 @@ function parseLista(valor: string): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
+}
+
+/** Fonte liberada para usuários não verificados: apenas o Trampos. */
+function fonteRestrita(tipo: string): boolean {
+  return tipo !== "Trampos"
 }
 
 const FONTE_COLOR: Record<string, string> = {
@@ -109,11 +118,12 @@ function Metricas({ execucao }: { execucao: ExecucaoBuscaDto | null }) {
   )
 }
 
-function VagaCard({ vaga, onAplicar, onDescartar, onCompatibilidade }: {
+function VagaCard({ vaga, onAplicar, onDescartar, onCompatibilidade, compatBloqueada }: {
   vaga: VagaDto
   onAplicar: () => void
   onDescartar: () => void
   onCompatibilidade: () => void
+  compatBloqueada?: boolean
 }) {
   const [descartando, setDescartando] = useState(false)
 
@@ -188,7 +198,7 @@ function VagaCard({ vaga, onAplicar, onDescartar, onCompatibilidade }: {
           disabled={descartando}
           onClick={onCompatibilidade}
         >
-          <Wand2 className="h-3.5 w-3.5" /> compatibilidade
+          {compatBloqueada ? <Lock className="h-3.5 w-3.5" /> : <Wand2 className="h-3.5 w-3.5" />} compatibilidade
         </Button>
       </div>
     </NotebookCard>
@@ -197,8 +207,11 @@ function VagaCard({ vaga, onAplicar, onDescartar, onCompatibilidade }: {
 
 function InboxTab() {
   const { vagas, loading, erro, executando, ultima, refresh, buscarAgora, aplicar, descartar } = useVagas()
+  const { hasPermissao } = useAuth()
+  const verificado = hasPermissao(PERMISSOES.verifyUser)
   const [q, setQ] = useState("")
   const [compat, setCompat] = useState<VagaDto | null>(null)
+  const [verificacaoOpen, setVerificacaoOpen] = useState(false)
 
   const { pendente, iniciar, limpar } = useAplicacaoPendente()
 
@@ -288,7 +301,14 @@ function InboxTab() {
               vaga={v}
               onAplicar={() => abrirParaAplicar(v)}
               onDescartar={() => void descartar(v.id)}
-              onCompatibilidade={() => setCompat(v)}
+              onCompatibilidade={() => {
+                if (!verificado) {
+                  setVerificacaoOpen(true)
+                  return
+                }
+                setCompat(v)
+              }}
+              compatBloqueada={!verificado}
             />
           ))}
         </div>
@@ -307,6 +327,8 @@ function InboxTab() {
           if (!open) setCompat(null)
         }}
       />
+
+      <VerificacaoDialog open={verificacaoOpen} onOpenChange={setVerificacaoOpen} />
     </div>
   )
 }
@@ -560,13 +582,24 @@ function FontesPanel({
   onAlternar: ReturnType<typeof useBuscaConfig>["alternarFonte"]
   onRemover: ReturnType<typeof useBuscaConfig>["removerFonte"]
 }) {
-  const [tipo, setTipo] = useState<string>("Gupy")
+  const { hasPermissao } = useAuth()
+  const verificado = hasPermissao(PERMISSOES.verifyUser)
+  const [tipo, setTipo] = useState<string>(verificado ? "Gupy" : "Trampos")
   const [identificador, setIdentificador] = useState("")
   const [nomeEmpresa, setNomeEmpresa] = useState("")
   const [adicionando, setAdicionando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [verificacaoOpen, setVerificacaoOpen] = useState(false)
+
+  const bloquear = () => {
+    setVerificacaoOpen(true)
+  }
 
   const adicionar = async () => {
+    if (!verificado && fonteRestrita(tipo)) {
+      bloquear()
+      return
+    }
     if (tipo === "Rss" && !identificador.trim()) {
       setErro("Informe a URL do feed RSS")
       return
@@ -598,14 +631,32 @@ function FontesPanel({
       <div className="mt-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-[170px_1fr_1fr_auto]">
         <div className="space-y-1 text-xs font-medium">
           Tipo
-          <Select value={tipo} onValueChange={setTipo}>
+          <Select
+            value={tipo}
+            onValueChange={(valor) => {
+              if (!verificado && fonteRestrita(valor)) {
+                bloquear()
+                return
+              }
+              setTipo(valor)
+            }}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {FONTE_TIPOS.map((t) => (
-                <SelectItem key={t} value={t}>{FONTE_LABEL[t] ?? t}</SelectItem>
-              ))}
+              {FONTE_TIPOS.map((t) => {
+                const bloqueada = !verificado && fonteRestrita(t)
+                return (
+                  <SelectItem key={t} value={t}>
+                    <span className="flex items-center gap-1.5">
+                      {bloqueada && <Lock className="h-3 w-3" />}
+                      {FONTE_LABEL[t] ?? t}
+                      {bloqueada && <span className="text-muted-foreground">· verificados</span>}
+                    </span>
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -667,9 +718,16 @@ function FontesPanel({
               <Button
                 size="sm"
                 variant={f.ativo ? "default" : "outline"}
-                className="h-7 text-xs"
-                onClick={() => void onAlternar(f.id, !f.ativo)}
+                className="h-7 gap-1.5 text-xs"
+                onClick={() => {
+                  if (!verificado && fonteRestrita(f.tipo)) {
+                    bloquear()
+                    return
+                  }
+                  void onAlternar(f.id, !f.ativo)
+                }}
               >
+                {!verificado && fonteRestrita(f.tipo) && <Lock className="h-3 w-3" />}
                 {f.ativo ? "ativa" : "pausada"}
               </Button>
               <Button
@@ -684,6 +742,8 @@ function FontesPanel({
           ))
         )}
       </div>
+
+      <VerificacaoDialog open={verificacaoOpen} onOpenChange={setVerificacaoOpen} />
     </Panel>
   )
 }

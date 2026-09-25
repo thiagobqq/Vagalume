@@ -3,17 +3,23 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { NotebookPanel } from "@/components/app/notebook-panel"
 import { useCurriculos } from "@/hooks/use-curriculos"
-import { Loader2, Upload, Download, Star, FileText, Wand2 } from "lucide-react"
+import { VerificacaoDialog } from "@/components/app/verificacao-dialog"
+import { useAuth } from "@/features/auth/auth-context"
+import { PERMISSOES } from "@/features/auth/permissoes"
+import { Loader2, Upload, Download, Star, FileText, Wand2, Lock } from "lucide-react"
 import { AnaliseAtsDialog } from "./analise-ats-dialog"
 import type { CurriculoDto } from "@/features/candidaturas/types"
 
 export function CurriculosPanel() {
   const { items, loading, error, upload, setAtivo, download, refresh } = useCurriculos()
+  const { hasPermissao } = useAuth()
+  const verificado = hasPermissao(PERMISSOES.verifyUser)
   const [uploading, setUploading] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [analiseAlvo, setAnaliseAlvo] = useState<CurriculoDto | null>(null)
   const [analiseOpen, setAnaliseOpen] = useState(false)
+  const [verificacaoOpen, setVerificacaoOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -122,9 +128,16 @@ export function CurriculosPanel() {
                     variant="outline"
                     size="sm"
                     className="h-7 gap-1.5 text-xs"
-                    onClick={() => { setAnaliseAlvo(c); setAnaliseOpen(true) }}
+                    onClick={() => {
+                      if (!verificado) {
+                        setVerificacaoOpen(true)
+                        return
+                      }
+                      setAnaliseAlvo(c)
+                      setAnaliseOpen(true)
+                    }}
                   >
-                    <Wand2 className="h-3.5 w-3.5" /> analisar
+                    {verificado ? <Wand2 className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />} analisar
                   </Button>
                   <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => onDownload(c.id, c.nomeArquivoOriginal)}>
                     <Download className="h-3.5 w-3.5" /> baixar
@@ -142,6 +155,7 @@ export function CurriculosPanel() {
       </div>
 
       <AnaliseAtsDialog curriculo={analiseAlvo} open={analiseOpen} onOpenChange={setAnaliseOpen} />
+      <VerificacaoDialog open={verificacaoOpen} onOpenChange={setVerificacaoOpen} />
     </NotebookPanel>
   )
 }
