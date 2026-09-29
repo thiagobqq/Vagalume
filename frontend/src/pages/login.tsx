@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Panel } from "@/components/app/panel"
 import { LogoFull } from "@/components/app/logo"
+import { GoogleButton } from "@/components/auth/google-button"
 import { Sparkles, Loader2 } from "lucide-react"
 import { useAuth } from "@/features/auth/auth-context"
 
@@ -73,6 +74,13 @@ export function Login() {
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} entrar
             </Button>
           </form>
+
+          <div className="relative my-5 text-center text-xs text-muted-foreground">
+            <div className="absolute inset-x-0 top-1/2 h-px bg-border" />
+            <span className="relative z-10 bg-card px-2">ou</span>
+          </div>
+
+          <GoogleButton onError={setErr} />
 
           <div className="mt-5 text-center text-xs text-muted-foreground">
             não tem conta?{" "}

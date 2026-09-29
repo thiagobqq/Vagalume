@@ -12,6 +12,10 @@ COPY . .
 ARG VITE_API_URL=""
 ENV VITE_API_URL=${VITE_API_URL}
 
+# Client ID público do Google (Sign in with Google) — embutido no bundle em build time
+ARG VITE_GOOGLE_CLIENT_ID=""
+ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+
 RUN npm run build
 
 # ---- runtime stage ----

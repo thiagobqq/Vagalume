@@ -9,12 +9,14 @@ import { Login } from "./pages/login"
 import { Register } from "./pages/register"
 import { AuthProvider } from "./features/auth/auth-context"
 import { PERMISSOES } from "./features/auth/permissoes"
+import { GOOGLE_CLIENT_ID } from "./features/auth/google"
 import { ThemeProvider } from "./features/theme/theme-provider"
 import { ProtectedRoute } from "./components/auth/protected-route"
+import { GoogleOAuthProvider } from "@react-oauth/google"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 
 export default function App() {
-  return (
+  const content = (
     <ThemeProvider>
       <Fireflies />
       <AuthProvider>
@@ -63,4 +65,8 @@ export default function App() {
       </AuthProvider>
     </ThemeProvider>
   )
+
+  if (!GOOGLE_CLIENT_ID) return content
+
+  return <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>{content}</GoogleOAuthProvider>
 }

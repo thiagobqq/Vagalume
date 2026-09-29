@@ -46,6 +46,7 @@ services:
         # vazio => frontend usa /api relativo e nginx faz proxy para api:8080
         # para expor API externa, defina: VITE_API_URL=http://localhost:5000
         VITE_API_URL: "${VITE_API_URL:-}"
+        VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"
     container_name: vagalume-frontend
     ports:
       - "${FRONTEND_PORT:-3000}:80"

@@ -18,6 +18,7 @@ using Vagalume.Infra.Data;
 using Vagalume.Infra.Providers;
 using Vagalume.Infra.Services;
 using Vagalume.Infra.Services.Analise;
+using Vagalume.Infra.Services.Auth;
 using Vagalume.Infra.Services.Busca;
 using Vagalume.Infra.Services.Busca.Fontes;
 using Vagalume.Infra.Services.Busca.Notificacoes;
@@ -120,6 +121,8 @@ builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEntitlementService, EntitlementService>();
+builder.Services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
+builder.Services.AddScoped<IExternalLoginService, ExternalLoginService>();
 
 // Busca automática de vagas
 var buscaUserAgent = builder.Configuration["Busca:UserAgent"] ?? "VagalumeBot/1.0";
