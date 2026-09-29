@@ -29,6 +29,7 @@ services:
       Jwt__Issuer: "${JWT_ISSUER:-vagalume}"
       Jwt__Audience: "${JWT_AUDIENCE:-vagalume}"
       Seguranca__ChaveCripto: "${SEGURANCA_CHAVE_CRIPTO:?defina SEGURANCA_CHAVE_CRIPTO}"
+      Authentication__Google__ClientId: "${AUTHENTICATION_GOOGLE_CLIENTID:-}"
       Ia__Presets__OllamaBaseUrl: "${IA_PRESETS_OLLAMA_BASE_URL:-}"
       Uploads__BasePath: "/app/uploads"
     volumes:
@@ -46,6 +47,7 @@ services:
       args:
         # vazio => frontend usa /api relativo e nginx faz proxy para api:8080
         VITE_API_URL: "${VITE_API_URL:-}"
+        VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"
     restart: unless-stopped
     depends_on:
       - api

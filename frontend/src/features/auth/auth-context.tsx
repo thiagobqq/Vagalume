@@ -8,6 +8,7 @@ type AuthState = {
   loading: boolean
   login: (email: string, senha: string) => Promise<void>
   register: (nome: string, email: string, senha: string) => Promise<void>
+  loginWithGoogle: (idToken: string) => Promise<void>
   logout: () => void
   isAuthenticated: boolean
   hasPermissao: (chave: string) => boolean
@@ -76,6 +77,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [login]
   )
 
+  const loginWithGoogle = useCallback(
+    async (idToken: string) => {
+      const { res, envelope, raw } = await apiEnvelope<AuthResponseDto>("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+        auth: false,
+      })
+      if (!res.ok || !envelope?.success || !envelope.data) {
+        throw new Error(envelope?.message || raw || "Falha no login com Google")
+      }
+      persist(envelope.data)
+    },
+    [persist]
+  )
+
   const logout = useCallback(() => {
     clearTokens()
     setUser(null)
@@ -117,12 +134,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       login,
       register,
+      loginWithGoogle,
       logout,
       isAuthenticated: !!accessToken,
       hasPermissao,
       refreshUser,
     }),
-    [user, accessToken, loading, login, register, logout, hasPermissao, refreshUser]
+    [user, accessToken, loading, login, register, loginWithGoogle, logout, hasPermissao, refreshUser]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -35,6 +35,12 @@ public class RefreshRequest
     public string RefreshToken { get; set; } = string.Empty;
 }
 
+public class GoogleLoginRequest
+{
+    [Required(ErrorMessage = "ID token do Google é obrigatório")]
+    public string IdToken { get; set; } = string.Empty;
+}
+
 public class UsuarioDto
 {
     public Guid Id { get; set; }

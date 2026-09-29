@@ -72,6 +72,20 @@ IA_PRESETS_OLLAMA_BASE_URL=   # opcional: habilita provedor Ollama local
 >
 > Em **produção** a API falha no startup se `Jwt__Key` estiver fraca/placeholder ou se `Seguranca__ChaveCripto` não for definida. No `docker-compose.prod.yml` as variáveis vêm da plataforma (`JWT_KEY`, `SEGURANCA_CHAVE_CRIPTO`, `POSTGRES_PASSWORD`) e também são obrigatórias no Compose.
 
+## Login com Google (OAuth2)
+
+Fluxo **Google Identity Services**: o front recebe o ID token do Google e envia para `POST /api/auth/google`; o backend valida o token, cria/vincula o usuário e devolve o JWT + refresh do Vagalume (mesmo formato do login por senha). Sem cookies e sem migration (a tabela `AspNetUserLogins` já existe).
+
+Configuração:
+
+1. No [Google Cloud Console](https://console.cloud.google.com/apis/credentials), crie um **OAuth Client ID** do tipo **Web application**.
+2. Em **Authorized JavaScript origins**, adicione as origens onde o front roda (ex.: `http://localhost:5173`, `http://localhost:3000` e o domínio de produção).
+3. Copie o **Client ID** (não precisa do Client Secret) para:
+   - Backend: `Authentication__Google__ClientId` no `.env` (ou `Authentication:Google:ClientId`).
+   - Frontend: `VITE_GOOGLE_CLIENT_ID` (variável de **build**, embutida no bundle). No Docker ela é passada via build arg nos compose.
+
+Sem essas variáveis o botão "entrar com Google" não aparece e o endpoint retorna `503`. E-mails do Google já verificados vinculam automaticamente a uma conta local existente com o mesmo e-mail.
+
 ## Rodar em dev sem Docker
 
 **Backend** (precisa PostgreSQL externo):

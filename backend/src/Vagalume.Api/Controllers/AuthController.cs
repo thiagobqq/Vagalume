@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +10,7 @@ using Vagalume.Domain.Abstractions;
 using Vagalume.Domain.Entities;
 using Vagalume.Infra.Data;
 using Vagalume.Infra.Services;
+using Vagalume.Infra.Services.Auth;
 
 namespace Vagalume.Api.Controllers;
 
@@ -21,17 +22,23 @@ public class AuthController : ControllerBase
     private readonly AppDbContext _db;
     private readonly ITokenService _tokenService;
     private readonly IEntitlementService _entitlements;
+    private readonly IGoogleTokenValidator _googleTokens;
+    private readonly IExternalLoginService _externalLogins;
 
     public AuthController(
         UserManager<AppUser> userManager,
         AppDbContext db,
         ITokenService tokenService,
-        IEntitlementService entitlements)
+        IEntitlementService entitlements,
+        IGoogleTokenValidator googleTokens,
+        IExternalLoginService externalLogins)
     {
         _userManager = userManager;
         _db = db;
         _tokenService = tokenService;
         _entitlements = entitlements;
+        _googleTokens = googleTokens;
+        _externalLogins = externalLogins;
     }
 
     [HttpPost("register")]
@@ -75,6 +82,51 @@ public class AuthController : ControllerBase
         var valid = await _userManager.CheckPasswordAsync(user, request.Senha);
         if (!valid)
             return Unauthorized(GenericResponseData<object>.Fail("Credenciais inválidas"));
+
+        var accessToken = _tokenService.GenerateAccessToken(user);
+        var refresh = await _tokenService.CreateRefreshTokenAsync(user.Id);
+
+        var response = new AuthResponseDto
+        {
+            AccessToken = accessToken,
+            RefreshToken = refresh.Token,
+            Usuario = await ToUsuarioDtoAsync(user)
+        };
+
+        return Ok(GenericResponseData<AuthResponseDto>.Ok(response, "Login realizado com sucesso"));
+    }
+
+    [HttpPost("google")]
+    [ProducesResponseType(typeof(GenericResponseData<AuthResponseDto>), 200)]
+    [ProducesResponseType(typeof(GenericResponseData<object>), 400)]
+    [ProducesResponseType(typeof(GenericResponseData<object>), 503)]
+    public async Task<IActionResult> LoginGoogle([FromBody] GoogleLoginRequest request)
+    {
+        if (!_googleTokens.Configurado)
+            return StatusCode(503, GenericResponseData<object>.Fail("Login com Google não configurado"));
+
+        GoogleUserInfo info;
+        try
+        {
+            info = await _googleTokens.ValidateAsync(request.IdToken);
+        }
+        catch (InvalidJwtException)
+        {
+            return BadRequest(GenericResponseData<object>.Fail("Token do Google inválido ou expirado"));
+        }
+
+        if (string.IsNullOrWhiteSpace(info.Email))
+            return BadRequest(GenericResponseData<object>.Fail("E-mail do Google não disponível"));
+
+        AppUser user;
+        try
+        {
+            user = await _externalLogins.FindOrCreateGoogleUserAsync(info);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(GenericResponseData<object>.Fail(ex.Message));
+        }
 
         var accessToken = _tokenService.GenerateAccessToken(user);
         var refresh = await _tokenService.CreateRefreshTokenAsync(user.Id);
