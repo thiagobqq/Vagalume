@@ -8,7 +8,7 @@ namespace Vagalume.Infra.Services.Busca.Fontes;
 
 public class GupyFonte : ScraperFonteBase
 {
-    private const string BaseUrl = "https://employability-portal.gupy.io/api/v1/jobs";
+    private const string BaseUrl = "https://portal.gupy.io/api/job-search/jobs";
 
     public GupyFonte(IHttpClientFactory factory, IOptions<ScrapingOptions> options) : base(factory, options) { }
 
@@ -51,17 +51,16 @@ public class GupyFonte : ScraperFonteBase
                 {
                     itensNaPagina++;
 
-                    var careerUrl = Texto(item, "careerPageUrl") ?? string.Empty;
-                    if (slug is not null && !careerUrl.Contains(slug, StringComparison.OrdinalIgnoreCase))
+                    var titulo = Texto(item, "name");
+                    var link = Texto(item, "jobUrl");
+                    if (string.IsNullOrWhiteSpace(titulo) || string.IsNullOrWhiteSpace(link))
+                        continue;
+
+                    if (slug is not null && !link.Contains($"{slug}.gupy.io", StringComparison.OrdinalIgnoreCase))
                         continue;
 
                     var id = item.TryGetProperty("id", out var idEl) && idEl.TryGetInt64(out var v) ? v : 0;
                     if (id != 0 && !vistos.Add(id))
-                        continue;
-
-                    var titulo = Texto(item, "name");
-                    var link = Texto(item, "jobUrl");
-                    if (string.IsNullOrWhiteSpace(titulo) || string.IsNullOrWhiteSpace(link))
                         continue;
 
                     var cidade = Texto(item, "city");
