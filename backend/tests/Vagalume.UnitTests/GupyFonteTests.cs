@@ -113,6 +113,35 @@ public class GupyFonteTests
     }
 
     [Fact]
+    public async Task BuscarAsync_DescartaVagasDePaginaInativa()
+    {
+        const string json = """
+        {
+          "data": [
+            {
+              "id": 1,
+              "name": "Vaga Ativa",
+              "jobUrl": "https://acme.gupy.io/job/eyJqb2JJZCI6MX0="
+            },
+            {
+              "id": 2,
+              "name": "Vaga Inativa",
+              "jobUrl": "https://q2bank&66802&inactive.gupy.io/job/eyJqb2JJZCI6Mn0=?jobBoardSource=gupy_portal"
+            }
+          ],
+          "pagination": { "total": 2, "limit": 50, "offset": 0 }
+        }
+        """;
+
+        var fonte = CriarFonte(json, out _);
+
+        var resultado = await fonte.BuscarAsync(Fonte(), Perfil());
+
+        Assert.Single(resultado);
+        Assert.Equal("Vaga Ativa", resultado[0].Titulo);
+    }
+
+    [Fact]
     public async Task BuscarAsync_PaginaVazia_RetornaVazioSemErro()
     {
         const string json = """
