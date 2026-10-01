@@ -29,7 +29,7 @@ public class TramposFonte : ScraperFonteBase
 
         for (var pagina = 1; pagina <= MaxPaginasVarredura; pagina++)
         {
-            if (resultado.Count >= Options.MaxItens)
+            if (resultado.Count >= Options.MaxColeta)
                 break;
 
             using var doc = await ObterJsonAsync($"{BaseUrl}?page={pagina}", ct);
@@ -86,7 +86,7 @@ public class TramposFonte : ScraperFonteBase
                     PublicadaEm = Data(item, "published_at")
                 });
 
-                if (resultado.Count >= Options.MaxItens)
+                if (resultado.Count >= Options.MaxColeta)
                     break;
             }
 
@@ -96,7 +96,7 @@ public class TramposFonte : ScraperFonteBase
             await EsperarAsync(ct);
         }
 
-        return resultado;
+        return OrdenarPorRecencia(resultado);
     }
 
     private static bool Relevante(string titulo, string categoriaSlug, string categoriaNome, List<string> termos)

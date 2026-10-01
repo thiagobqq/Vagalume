@@ -51,6 +51,10 @@ public abstract class FonteVagasBase : IFonteVagas
             System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
             out var dt) ? dt : null;
     }
+
+    // Garante as vagas mais recentes primeiro; itens sem data vão para o fim.
+    protected static IReadOnlyList<VagaColetada> OrdenarPorRecencia(IEnumerable<VagaColetada> vagas)
+        => vagas.OrderByDescending(v => v.PublicadaEm ?? DateTime.MinValue).ToList();
 }
 
 public abstract class ScraperFonteBase : FonteVagasBase

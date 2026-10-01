@@ -37,8 +37,8 @@ public class GupyFonte : ScraperFonteBase
         {
             for (var pagina = 0; pagina < Math.Max(1, Options.MaxPaginas); pagina++)
             {
-                if (resultado.Count >= Options.MaxItens)
-                    return resultado;
+                if (resultado.Count >= Options.MaxColeta)
+                    return OrdenarPorRecencia(resultado);
 
                 var url = $"{BaseUrl}?jobName={Uri.EscapeDataString(termo)}&limit=50&offset={pagina * 50}";
                 using var doc = await ObterJsonAsync(url, ct);
@@ -78,8 +78,8 @@ public class GupyFonte : ScraperFonteBase
                         PublicadaEm = Data(item, "publishedDate")
                     });
 
-                    if (resultado.Count >= Options.MaxItens)
-                        return resultado;
+                    if (resultado.Count >= Options.MaxColeta)
+                        return OrdenarPorRecencia(resultado);
                 }
 
                 if (itensNaPagina < 50)
@@ -91,7 +91,7 @@ public class GupyFonte : ScraperFonteBase
             await EsperarAsync(ct);
         }
 
-        return resultado;
+        return OrdenarPorRecencia(resultado);
     }
 
     private static ModalidadeVaga MapearModalidade(string? workplaceType, JsonElement item)

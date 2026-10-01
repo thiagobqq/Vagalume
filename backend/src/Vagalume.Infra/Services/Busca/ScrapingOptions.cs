@@ -4,9 +4,11 @@ public class ScrapingOptions
 {
     public int DelayMs { get; set; } = 700;
     public int MaxPaginas { get; set; } = 3;
+    public int MaxColeta { get; set; } = 100;
     public int MaxItens { get; set; } = 40;
     public int MaxDetalhes { get; set; } = 20;
     public int MaxTermos { get; set; } = 4;
+    public int JanelaPublicacaoDias { get; set; } = 7;
 
     // Portais com WAF (ex.: Catho) bloqueiam User-Agent de bot; API/JSON não se importam.
     public string UserAgent { get; set; } =

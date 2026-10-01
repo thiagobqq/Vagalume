@@ -1,26 +1,25 @@
-using System.Net;
-using System.Text;
 using Microsoft.Extensions.Options;
 using Vagalume.Domain.Busca;
 using Vagalume.Domain.Entities;
 using Vagalume.Domain.Enums;
 using Vagalume.Infra.Services.Busca;
 using Vagalume.Infra.Services.Busca.Fontes;
+using Vagalume.UnitTests.Support;
 using Xunit;
 
 namespace Vagalume.UnitTests;
 
 public class GupyFonteTests
 {
-    private static GupyFonte CriarFonte(string json, out CapturaHandler handler, int maxPaginas = 1, int maxItens = 40)
+    private static GupyFonte CriarFonte(string json, out StubHttpMessageHandler handler, int maxPaginas = 1, int maxColeta = 100)
     {
-        handler = new CapturaHandler(json);
+        handler = StubHttpMessageHandler.Json(json);
         var factory = new StubHttpClientFactory(handler);
         var options = Options.Create(new ScrapingOptions
         {
             DelayMs = 0,
             MaxPaginas = maxPaginas,
-            MaxItens = maxItens,
+            MaxColeta = maxColeta,
             MaxTermos = 1
         });
         return new GupyFonte(factory, options);
@@ -139,32 +138,47 @@ public class GupyFonteTests
         Assert.Empty(resultado);
     }
 
-    private sealed class StubHttpClientFactory : IHttpClientFactory
+    [Fact]
+    public async Task BuscarAsync_OrdenaPorRecenciaDescendente()
     {
-        private readonly HttpMessageHandler _handler;
+        const string json = """
+        {
+          "data": [
+            { "id": 1, "name": "Antiga", "jobUrl": "https://acme.gupy.io/job/1", "publishedDate": "2026-01-01T00:00:00Z" },
+            { "id": 2, "name": "Recente", "jobUrl": "https://acme.gupy.io/job/2", "publishedDate": "2026-09-30T00:00:00Z" },
+            { "id": 3, "name": "Meio", "jobUrl": "https://acme.gupy.io/job/3", "publishedDate": "2026-05-01T00:00:00Z" }
+          ],
+          "pagination": { "total": 3, "limit": 50, "offset": 0 }
+        }
+        """;
 
-        public StubHttpClientFactory(HttpMessageHandler handler) => _handler = handler;
+        var fonte = CriarFonte(json, out _);
 
-        public HttpClient CreateClient(string name)
-            => new(_handler, disposeHandler: false);
+        var resultado = await fonte.BuscarAsync(Fonte(), Perfil());
+
+        Assert.Equal(new[] { "Recente", "Meio", "Antiga" }, resultado.Select(v => v.Titulo));
     }
 
-    private sealed class CapturaHandler : HttpMessageHandler
+    [Fact]
+    public async Task BuscarAsync_RespeitaMaxColeta()
     {
-        private readonly string _json;
-
-        public CapturaHandler(string json) => _json = json;
-
-        public Uri? UltimaRequisicao { get; private set; }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        // A Gupy devolve por recency desc; o corte bruto preserva as mais recentes.
+        const string json = """
         {
-            UltimaRequisicao = request.RequestUri;
-            var response = new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(_json, Encoding.UTF8, "application/json")
-            };
-            return Task.FromResult(response);
+          "data": [
+            { "id": 1, "name": "Vaga 1", "jobUrl": "https://acme.gupy.io/job/1", "publishedDate": "2026-01-03T00:00:00Z" },
+            { "id": 2, "name": "Vaga 2", "jobUrl": "https://acme.gupy.io/job/2", "publishedDate": "2026-01-02T00:00:00Z" },
+            { "id": 3, "name": "Vaga 3", "jobUrl": "https://acme.gupy.io/job/3", "publishedDate": "2026-01-01T00:00:00Z" }
+          ],
+          "pagination": { "total": 3, "limit": 50, "offset": 0 }
         }
+        """;
+
+        var fonte = CriarFonte(json, out _, maxColeta: 2);
+
+        var resultado = await fonte.BuscarAsync(Fonte(), Perfil());
+
+        Assert.Equal(2, resultado.Count);
+        Assert.Equal(new[] { "Vaga 1", "Vaga 2" }, resultado.Select(v => v.Titulo));
     }
 }

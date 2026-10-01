@@ -50,7 +50,7 @@ public class VagasController : ControllerBase
         }
 
         var vagas = await query
-            .OrderByDescending(v => v.CriadoEm)
+            .OrderByDescending(v => v.PublicadaEm ?? v.CriadoEm)
             .Take(Math.Clamp(limite, 1, 200))
             .ToListAsync();
 
