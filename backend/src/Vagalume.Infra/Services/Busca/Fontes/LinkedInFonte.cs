@@ -31,6 +31,7 @@ public class LinkedInFonte : ScraperFonteBase
             termos.Add("desenvolvedor");
 
         var filtroLocal = MontarFiltroLocalizacao(fonte, perfil);
+        var janelaSegundos = Math.Max(1, Options.JanelaPublicacaoDias) * 86400;
         var resultado = new List<VagaColetada>();
         var vistos = new HashSet<string>(StringComparer.Ordinal);
         var detalhesBuscados = 0;
@@ -40,10 +41,10 @@ public class LinkedInFonte : ScraperFonteBase
         {
             for (var pagina = 0; pagina < Math.Max(1, Options.MaxPaginas); pagina++)
             {
-                if (resultado.Count >= Options.MaxItens)
-                    return resultado;
+                if (resultado.Count >= Options.MaxColeta)
+                    return OrdenarPorRecencia(resultado);
 
-                var url = $"{BaseUrl}/seeMoreJobPostings/search?keywords={Uri.EscapeDataString(termo)}&{filtroLocal}&start={pagina * ItensPorPagina}";
+                var url = $"{BaseUrl}/seeMoreJobPostings/search?keywords={Uri.EscapeDataString(termo)}&{filtroLocal}&f_TPR=r{janelaSegundos}&start={pagina * ItensPorPagina}";
                 IHtmlDocument doc;
                 try
                 {
@@ -106,8 +107,8 @@ public class LinkedInFonte : ScraperFonteBase
                         PublicadaEm = publicada
                     });
 
-                    if (resultado.Count >= Options.MaxItens)
-                        return resultado;
+                    if (resultado.Count >= Options.MaxColeta)
+                        return OrdenarPorRecencia(resultado);
                 }
 
                 await EsperarAsync(ct);
@@ -116,7 +117,7 @@ public class LinkedInFonte : ScraperFonteBase
             await EsperarAsync(ct);
         }
 
-        return resultado;
+        return OrdenarPorRecencia(resultado);
     }
 
     private async Task<string?> ObterDescricaoAsync(string id, CancellationToken ct)

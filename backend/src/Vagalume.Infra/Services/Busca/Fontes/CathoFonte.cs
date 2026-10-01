@@ -30,8 +30,8 @@ public class CathoFonte : ScraperFonteBase
         {
             for (var pagina = 1; pagina <= Math.Max(1, Options.MaxPaginas); pagina++)
             {
-                if (resultado.Count >= Options.MaxItens)
-                    return resultado;
+                if (resultado.Count >= Options.MaxColeta)
+                    return OrdenarPorRecencia(resultado);
 
                 var url = $"{BaseUrl}/vagas/{Slug(termo)}/?page={pagina}";
                 IHtmlDocument doc;
@@ -71,8 +71,8 @@ public class CathoFonte : ScraperFonteBase
                         Descricao = string.Join(" ", paragrafos)
                     });
 
-                    if (resultado.Count >= Options.MaxItens)
-                        return resultado;
+                    if (resultado.Count >= Options.MaxColeta)
+                        return OrdenarPorRecencia(resultado);
                 }
 
                 await EsperarAsync(ct);
@@ -81,7 +81,7 @@ public class CathoFonte : ScraperFonteBase
             await EsperarAsync(ct);
         }
 
-        return resultado;
+        return OrdenarPorRecencia(resultado);
     }
 
     private static string Slug(string termo)

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Vagalume.Domain.Abstractions;
 using Vagalume.Domain.Authorization;
 using Vagalume.Domain.Busca;
@@ -21,6 +22,7 @@ public class ColetaVagasService : IBuscaVagasService
     private readonly INotificadorBusca _notificador;
     private readonly IEntitlementService _entitlements;
     private readonly ILogger<ColetaVagasService> _logger;
+    private readonly ScrapingOptions _scraping;
     private readonly TimeSpan _timeoutFonte;
 
     public ColetaVagasService(
@@ -32,6 +34,7 @@ public class ColetaVagasService : IBuscaVagasService
         INotificadorBusca notificador,
         IEntitlementService entitlements,
         IConfiguration config,
+        IOptions<ScrapingOptions> scraping,
         ILogger<ColetaVagasService> logger)
     {
         _db = db;
@@ -42,6 +45,7 @@ public class ColetaVagasService : IBuscaVagasService
         _notificador = notificador;
         _entitlements = entitlements;
         _logger = logger;
+        _scraping = scraping.Value;
         _timeoutFonte = TimeSpan.FromSeconds(Math.Clamp(config.GetValue("Busca:TimeoutFonteSegundos", 60), 10, 600));
     }
 
@@ -105,6 +109,9 @@ public class ColetaVagasService : IBuscaVagasService
 
                     foreach (var cru in coletadas)
                     {
+                        if (detalhe.Adicionadas >= _scraping.MaxItens)
+                            break;
+
                         var normalizada = NormalizadorVaga.Normalizar(cru, fonte);
 
                         if (!_filtro.Aprovar(normalizada, perfil))

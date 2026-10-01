@@ -22,7 +22,7 @@ public class ProgramathorFonte : ScraperFonteBase
 
         for (var pagina = 1; pagina <= Math.Max(1, Options.MaxPaginas); pagina++)
         {
-            if (resultado.Count >= Options.MaxItens)
+            if (resultado.Count >= Options.MaxColeta)
                 break;
 
             var html = await Http.GetStringAsync($"{BaseUrl}/jobs?page={pagina}", ct);
@@ -61,13 +61,13 @@ public class ProgramathorFonte : ScraperFonteBase
                     Descricao = string.IsNullOrWhiteSpace(conteudo) ? null : conteudo.Trim()
                 });
 
-                if (resultado.Count >= Options.MaxItens)
+                if (resultado.Count >= Options.MaxColeta)
                     break;
             }
 
             await EsperarAsync(ct);
         }
 
-        return resultado;
+        return OrdenarPorRecencia(resultado);
     }
 }

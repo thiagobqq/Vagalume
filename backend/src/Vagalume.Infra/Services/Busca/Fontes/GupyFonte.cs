@@ -8,7 +8,7 @@ namespace Vagalume.Infra.Services.Busca.Fontes;
 
 public class GupyFonte : ScraperFonteBase
 {
-    private const string BaseUrl = "https://employability-portal.gupy.io/api/v1/jobs";
+    private const string BaseUrl = "https://portal.gupy.io/api/job-search/jobs";
 
     public GupyFonte(IHttpClientFactory factory, IOptions<ScrapingOptions> options) : base(factory, options) { }
 
@@ -37,8 +37,8 @@ public class GupyFonte : ScraperFonteBase
         {
             for (var pagina = 0; pagina < Math.Max(1, Options.MaxPaginas); pagina++)
             {
-                if (resultado.Count >= Options.MaxItens)
-                    return resultado;
+                if (resultado.Count >= Options.MaxColeta)
+                    return OrdenarPorRecencia(resultado);
 
                 var url = $"{BaseUrl}?jobName={Uri.EscapeDataString(termo)}&limit=50&offset={pagina * 50}";
                 using var doc = await ObterJsonAsync(url, ct);
@@ -51,17 +51,16 @@ public class GupyFonte : ScraperFonteBase
                 {
                     itensNaPagina++;
 
-                    var careerUrl = Texto(item, "careerPageUrl") ?? string.Empty;
-                    if (slug is not null && !careerUrl.Contains(slug, StringComparison.OrdinalIgnoreCase))
+                    var titulo = Texto(item, "name");
+                    var link = Texto(item, "jobUrl");
+                    if (string.IsNullOrWhiteSpace(titulo) || string.IsNullOrWhiteSpace(link))
+                        continue;
+
+                    if (slug is not null && !link.Contains($"{slug}.gupy.io", StringComparison.OrdinalIgnoreCase))
                         continue;
 
                     var id = item.TryGetProperty("id", out var idEl) && idEl.TryGetInt64(out var v) ? v : 0;
                     if (id != 0 && !vistos.Add(id))
-                        continue;
-
-                    var titulo = Texto(item, "name");
-                    var link = Texto(item, "jobUrl");
-                    if (string.IsNullOrWhiteSpace(titulo) || string.IsNullOrWhiteSpace(link))
                         continue;
 
                     var cidade = Texto(item, "city");
@@ -79,8 +78,8 @@ public class GupyFonte : ScraperFonteBase
                         PublicadaEm = Data(item, "publishedDate")
                     });
 
-                    if (resultado.Count >= Options.MaxItens)
-                        return resultado;
+                    if (resultado.Count >= Options.MaxColeta)
+                        return OrdenarPorRecencia(resultado);
                 }
 
                 if (itensNaPagina < 50)
@@ -92,7 +91,7 @@ public class GupyFonte : ScraperFonteBase
             await EsperarAsync(ct);
         }
 
-        return resultado;
+        return OrdenarPorRecencia(resultado);
     }
 
     private static ModalidadeVaga MapearModalidade(string? workplaceType, JsonElement item)

@@ -24,7 +24,13 @@ public abstract class FonteVagasBase : IFonteVagas
 
     protected async Task<JsonDocument> ObterJsonAsync(string url, CancellationToken ct)
     {
-        await using var stream = await Http.GetStreamAsync(url, ct);
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.TryAddWithoutValidation("Accept", "application/json");
+
+        using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        resp.EnsureSuccessStatusCode();
+
+        await using var stream = await resp.Content.ReadAsStreamAsync(ct);
         return await JsonDocument.ParseAsync(stream, cancellationToken: ct);
     }
 
@@ -45,6 +51,10 @@ public abstract class FonteVagasBase : IFonteVagas
             System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal,
             out var dt) ? dt : null;
     }
+
+    // Garante as vagas mais recentes primeiro; itens sem data vão para o fim.
+    protected static IReadOnlyList<VagaColetada> OrdenarPorRecencia(IEnumerable<VagaColetada> vagas)
+        => vagas.OrderByDescending(v => v.PublicadaEm ?? DateTime.MinValue).ToList();
 }
 
 public abstract class ScraperFonteBase : FonteVagasBase

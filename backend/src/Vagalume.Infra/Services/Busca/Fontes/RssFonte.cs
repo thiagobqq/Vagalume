@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Xml.Linq;
+using Microsoft.Extensions.Options;
 using Vagalume.Domain.Busca;
 using Vagalume.Domain.Entities;
 using Vagalume.Domain.Enums;
@@ -8,7 +9,10 @@ namespace Vagalume.Infra.Services.Busca.Fontes;
 
 public class RssFonte : FonteVagasBase
 {
-    public RssFonte(IHttpClientFactory factory) : base(factory) { }
+    private readonly ScrapingOptions _options;
+
+    public RssFonte(IHttpClientFactory factory, IOptions<ScrapingOptions> options) : base(factory)
+        => _options = options.Value;
 
     public override FonteTipo Tipo => FonteTipo.Rss;
     public override string NomePadrao => "RSS";
@@ -42,7 +46,7 @@ public class RssFonte : FonteVagasBase
             });
         }
 
-        return resultado;
+        return OrdenarPorRecencia(resultado).Take(Math.Max(1, _options.MaxColeta)).ToList();
     }
 
     private static string? Valor(XElement item, string localName)
