@@ -56,6 +56,9 @@ public class GupyFonte : ScraperFonteBase
                     if (string.IsNullOrWhiteSpace(titulo) || string.IsNullOrWhiteSpace(link))
                         continue;
 
+                    if (UrlInativa(link))
+                        continue;
+
                     if (slug is not null && !link.Contains($"{slug}.gupy.io", StringComparison.OrdinalIgnoreCase))
                         continue;
 
@@ -92,6 +95,20 @@ public class GupyFonte : ScraperFonteBase
         }
 
         return OrdenarPorRecencia(resultado);
+    }
+
+    // A Gupy devolve vagas de páginas de carreira inativas com host inválido,
+    // ex.: https://q2bank&66802&inactive.gupy.io/job/... (não resolve).
+    private static bool UrlInativa(string url)
+    {
+        var inicio = url.IndexOf("://", StringComparison.Ordinal);
+        var host = inicio >= 0 ? url[(inicio + 3)..] : url;
+        var barra = host.IndexOf('/');
+        if (barra >= 0)
+            host = host[..barra];
+
+        return host.Contains("inactive", StringComparison.OrdinalIgnoreCase)
+            || host.Contains('&');
     }
 
     private static ModalidadeVaga MapearModalidade(string? workplaceType, JsonElement item)
