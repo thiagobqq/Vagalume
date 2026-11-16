@@ -28,6 +28,7 @@ public static class BuscaMapping
         Id = f.Id,
         Tipo = f.Tipo.ToString(),
         Identificador = f.Identificador,
+        Instrucoes = f.Instrucoes,
         NomeEmpresa = f.NomeEmpresa,
         Nome = f.Nome,
         Ativo = f.Ativo,
@@ -65,6 +66,8 @@ public static class BuscaMapping
         DetalhesPorFonte = e.DetalhesPorFonte.Select(d => new ResultadoFonteDto
         {
             FonteNome = d.FonteNome,
+            Coletando = d.FonteLocalPendenteId.HasValue,
+            AguardandoAgente = d.AguardandoAgente,
             Sucesso = d.Sucesso,
             Erro = d.Erro,
             Encontradas = d.Encontradas,

@@ -64,6 +64,7 @@ export function useVagas() {
           await refresh()
         } else {
           setExecucaoAtual(ex)
+          if (ex.adicionadas > execucaoAtual.adicionadas) await refresh()
         }
       } catch {
         /* erro transitório: mantém o polling */

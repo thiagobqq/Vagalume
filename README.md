@@ -7,6 +7,12 @@ Monorepo com **backend .NET 10 + PostgreSQL** e **frontend React 19 + Vite + Tai
 - **Frontend** `frontend/`: React 19, React Router 7, Vite 8, Tailwind 4, shadcn/new-york, autenticação real, kanban 5 colunas, currículos PDF, busca de vagas e análise de compatibilidade
 - **Infra**: Docker Compose com 3 serviços (postgres + api + frontend via nginx proxy)
 
+## Vídeo de divulgação
+
+A pasta [`video/`](video/README.md) contém uma propaganda vertical de 30 segundos
+feita com Remotion, animações e trilha original. Para editar: `cd video && npm ci && npm run dev`.
+Para exportar o MP4 em 1080 × 1920: `npm run render`.
+
 ## Rodar tudo com Docker (recomendado — compose geral)
 
 Na **raiz** `Vagalume/`:

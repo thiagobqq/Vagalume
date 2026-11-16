@@ -8,6 +8,8 @@ public class FonteBusca
     public Guid UsuarioId { get; set; }
     public FonteTipo Tipo { get; set; }
     public string? Identificador { get; set; }
+    public string? WebhookCifrado { get; set; }
+    public string? Instrucoes { get; set; }
     public string? NomeEmpresa { get; set; }
     public string? Nome { get; set; }
     public bool Ativo { get; set; } = true;

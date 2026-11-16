@@ -53,6 +53,7 @@ public class SalvarPerfilBuscaRequest
 
 public class FonteBuscaDto
 {
+    public string? Instrucoes { get; set; }
     public Guid Id { get; set; }
     public string Tipo { get; set; } = string.Empty;
     public string? Identificador { get; set; }
@@ -67,6 +68,12 @@ public class CriarFonteBuscaRequest
     [Required(ErrorMessage = "Tipo é obrigatório")]
     public string Tipo { get; set; } = string.Empty;
 
+    [MaxLength(2048)]
+    public string? WebhookUrl { get; set; }
+
+    [MaxLength(2000)]
+    public string? Instrucoes { get; set; }
+
     [MaxLength(500)]
     public string? Identificador { get; set; }
 
@@ -79,6 +86,12 @@ public class CriarFonteBuscaRequest
 
 public class AtualizarFonteBuscaRequest
 {
+    [MaxLength(2048)]
+    public string? WebhookUrl { get; set; }
+
+    [MaxLength(2000)]
+    public string? Instrucoes { get; set; }
+
     [MaxLength(500)]
     public string? Identificador { get; set; }
 
@@ -121,6 +134,8 @@ public class AtualizarStatusVagaRequest
 
 public class ResultadoFonteDto
 {
+    public bool Coletando { get; set; }
+    public bool AguardandoAgente { get; set; }
     public string FonteNome { get; set; } = string.Empty;
     public bool Sucesso { get; set; }
     public string? Erro { get; set; }

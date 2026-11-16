@@ -3,6 +3,9 @@ namespace Vagalume.Domain.Busca;
 public class ResultadoFonte
 {
     public string FonteNome { get; set; } = string.Empty;
+    public Guid? FonteLocalPendenteId { get; set; }
+    public Guid? PedidoAgenteId { get; set; }
+    public bool AguardandoAgente { get; set; }
     public bool Sucesso { get; set; }
     public string? Erro { get; set; }
     public int Encontradas { get; set; }

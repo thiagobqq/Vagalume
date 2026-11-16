@@ -57,7 +57,7 @@ public class BuscaEnfileirador
         var verificado = await _entitlements.HasAsync(usuarioId, Permissoes.VerifyUser);
         var temPerfil = await _db.PerfisBusca.AnyAsync(p => p.UsuarioId == usuarioId, ct);
         var temFonte = await _db.FontesBusca.AnyAsync(f =>
-            f.UsuarioId == usuarioId && f.Ativo && (verificado || f.Tipo == FonteTipo.Trampos), ct);
+            f.UsuarioId == usuarioId && f.Ativo && (verificado || AcessoFonte.Publicas.Contains(f.Tipo)), ct);
         if (!temPerfil || !temFonte)
             return new ResultadoEnfileiramento(StatusEnfileiramento.SemConfiguracao, null);
 

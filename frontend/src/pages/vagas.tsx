@@ -53,12 +53,12 @@ function parseLista(valor: string): string[] {
     .filter(Boolean)
 }
 
-/** Fonte liberada para usuários não verificados: apenas o Trampos. */
 function fonteRestrita(tipo: string): boolean {
-  return tipo !== "Trampos"
+  return tipo !== "Trampos" && tipo !== "Agente"
 }
 
 const FONTE_COLOR: Record<string, string> = {
+  Agente: "var(--crayon-purple)",
   Gupy: "var(--crayon-blue)",
   Trampos: "var(--crayon-green)",
   Programathor: "var(--crayon-purple)",
@@ -105,9 +105,9 @@ function Metricas({ execucao }: { execucao: ExecucaoBuscaDto | null }) {
           </div>
         ))}
       </div>
-      {execucao?.detalhesPorFonte?.some((d) => !d.sucesso) && (
+      {execucao?.detalhesPorFonte?.some((d) => !d.coletando && !d.aguardandoAgente && !d.sucesso) && (
         <div className="mt-3 space-y-1">
-          {execucao.detalhesPorFonte.filter((d) => !d.sucesso).map((d) => (
+          {execucao.detalhesPorFonte.filter((d) => !d.coletando && !d.aguardandoAgente && !d.sucesso).map((d) => (
             <div key={d.fonteNome} className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {d.fonteNome}: {d.erro ?? "falha na coleta"}
             </div>
@@ -206,7 +206,7 @@ function VagaCard({ vaga, onAplicar, onDescartar, onCompatibilidade, compatBloqu
 }
 
 function InboxTab() {
-  const { vagas, loading, erro, executando, ultima, refresh, buscarAgora, aplicar, descartar } = useVagas()
+  const { vagas, loading, erro, executando, execucaoAtual, ultima, refresh, buscarAgora, aplicar, descartar } = useVagas()
   const { hasPermissao } = useAuth()
   const verificado = hasPermissao(PERMISSOES.verifyUser)
   const [q, setQ] = useState("")
@@ -256,16 +256,18 @@ function InboxTab() {
 
       {executando && (
         <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Buscando vagas... isso pode levar alguns minutos. A lista e as métricas atualizam sozinhas.
+          {execucaoAtual?.detalhesPorFonte.some((d) => d.aguardandoAgente)
+            ? "Aguardando agente. Você pode fechar a página e consultar o resultado depois."
+            : "Buscando vagas… A lista e as métricas atualizam sozinhas."}
         </div>
       )}
       {!executando && ultima?.sucesso === false && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-          A última busca falhou: {ultima.erro ?? "erro desconhecido"}
+          {ultima.erro ?? "Uma ou mais fontes falharam. Consulte os detalhes abaixo."}
         </div>
       )}
 
-      <Metricas execucao={ultima} />
+      <Metricas execucao={execucaoAtual ?? ultima} />
 
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -586,6 +588,8 @@ function FontesPanel({
   const verificado = hasPermissao(PERMISSOES.verifyUser)
   const [tipo, setTipo] = useState<string>(verificado ? "Gupy" : "Trampos")
   const [identificador, setIdentificador] = useState("")
+  const [webhookUrl, setWebhookUrl] = useState("")
+  const [instrucoes, setInstrucoes] = useState("")
   const [nomeEmpresa, setNomeEmpresa] = useState("")
   const [adicionando, setAdicionando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -604,14 +608,21 @@ function FontesPanel({
       setErro("Informe a URL do feed RSS")
       return
     }
+    if (tipo === "Agente" && !/^https:\/\//i.test(webhookUrl.trim())) {
+      setErro("Informe a URL HTTPS do webhook")
+      return
+    }
     setAdicionando(true)
     setErro(null)
     try {
       await onAdicionar({
         tipo,
-        identificador: identificador.trim() || null,
-        nomeEmpresa: nomeEmpresa.trim() || null,
+        ...(tipo === "Agente"
+          ? { webhookUrl: webhookUrl.trim(), instrucoes: instrucoes.trim(), nome: nomeEmpresa.trim() || null }
+          : { identificador: identificador.trim() || null, nomeEmpresa: nomeEmpresa.trim() || null }),
       })
+      setWebhookUrl("")
+      setInstrucoes("")
       setIdentificador("")
       setNomeEmpresa("")
     } catch (e) {
@@ -625,7 +636,7 @@ function FontesPanel({
     <Panel className="p-5">
       <h3 className="text-sm font-semibold">Fontes de vagas</h3>
       <p className="text-xs text-muted-foreground">
-        Portais brasileiros e feeds. A busca usa as palavras-chave/tecnologias do perfil.
+        Escolha as fontes que vão buscar vagas com os critérios do seu perfil.
       </p>
 
       <div className="mt-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-[170px_1fr_1fr_auto]">
@@ -638,6 +649,8 @@ function FontesPanel({
                 bloquear()
                 return
               }
+              setIdentificador("")
+              setNomeEmpresa("")
               setTipo(valor)
             }}
           >
@@ -661,6 +674,14 @@ function FontesPanel({
           </Select>
         </div>
 
+        {tipo === "Agente" && (
+          <label className="space-y-1 text-xs font-medium">
+            URL do webhook
+            <Input type="password" autoComplete="off" maxLength={2048} value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)} placeholder="https://…" />
+          </label>
+        )}
+
         {tipo === "Rss" && (
           <label className="space-y-1 text-xs font-medium sm:col-span-1">
             URL do feed
@@ -683,14 +704,32 @@ function FontesPanel({
         )}
 
         <label className="space-y-1 text-xs font-medium">
-          Nome da empresa (opcional)
-          <Input value={nomeEmpresa} onChange={(e) => setNomeEmpresa(e.target.value)} placeholder="ex.: GitLab" />
+          {tipo === "Agente" ? "Nome do agente (opcional)" : "Nome da empresa (opcional)"}
+          <Input value={nomeEmpresa} onChange={(e) => setNomeEmpresa(e.target.value)} placeholder={tipo === "Agente" ? "Meu workflow" : "ex.: GitLab"} />
         </label>
 
         <Button onClick={adicionar} disabled={adicionando} className="gap-1.5">
           {adicionando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} adicionar
         </Button>
       </div>
+
+      {tipo === "Agente" && (
+        <div className="mt-3 space-y-2">
+          <label className="block space-y-1 text-xs font-medium">
+            Instruções ao agente (opcional)
+            <Input maxLength={2000} value={instrucoes} onChange={(e) => setInstrucoes(e.target.value)}
+              placeholder="Priorize vagas com salário publicado" />
+          </label>
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer">Como configurar o retorno do workflow</summary>
+            <p className="mt-2">Responda ao disparo com HTTP 202. Quando a busca terminar, envie um POST para
+              <code> callback.url</code>, com o cabeçalho <code>Authorization: Bearer &lt;callback.token&gt;</code>
+              {" "}e o corpo em JSON. Envie até 25 vagas em um único lote, dentro de 30 minutos.</p>
+            <pre className="mt-2 overflow-x-auto rounded bg-muted p-2">{'{"vagas":[{"titulo":"Analista","url":"https://empresa.com/vagas/123"}]}'}</pre>
+            <p className="mt-1">Se nenhuma vaga atender ao perfil, envie <code>{'{"vagas":[]}'}</code>.</p>
+          </details>
+        </div>
+      )}
 
       {FONTE_HINT[tipo] && (
         <p className="mt-2 text-[11px] text-muted-foreground">{FONTE_HINT[tipo]}</p>
@@ -711,6 +750,9 @@ function FontesPanel({
                 <div className="truncate text-sm font-medium">
                   {f.nome ?? f.nomeEmpresa ?? FONTE_LABEL[f.tipo] ?? f.tipo}
                 </div>
+                {f.tipo === "Agente" && f.instrucoes && (
+                  <div className="text-xs text-muted-foreground">{f.instrucoes}</div>
+                )}
                 {f.identificador && (
                   <div className="truncate text-xs text-muted-foreground">{f.identificador}</div>
                 )}

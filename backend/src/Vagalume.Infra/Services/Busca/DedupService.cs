@@ -45,6 +45,8 @@ public class IndiceDedup
     public bool Contem(string urlNormalizada, string hash)
         => _urls.Contains(urlNormalizada) || _hashes.Contains(hash);
 
+    public void AdicionarUrl(string urlNormalizada) => _urls.Add(urlNormalizada);
+
     public void Adicionar(string urlNormalizada, string hash)
     {
         _urls.Add(urlNormalizada);

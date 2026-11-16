@@ -101,3 +101,31 @@ Migrations são aplicadas no startup (`db.Database.Migrate()`).
 - Currículo: sem delete na fatia 1, validação PDF por extensão + content-type, limite 10MB (`RequestSizeLimit` + checagem manual → 413).
 - Sem roles, sem confirmação e-mail, sem forgot/reset.
 - Envelope + JWT `ClaimTypes.NameIdentifier` para escopo por usuário.
+
+## Fonte Agente
+
+Em **Busca de vagas → Configuração → Fontes de vagas**, qualquer conta pode cadastrar um webhook HTTPS privado e instruções opcionais. Para habilitar o retorno, configure `Busca__Agente__UrlPublica` com a origem HTTPS acessível do Vagalume, por exemplo `https://vagalume.example`. O backend aplica a migration no startup.
+
+Ao buscar manualmente ou pelo agendador, o workflow recebe um POST com `versao`, `pedidoId`, `expiraEm`, `criterios`, `instrucoes`, `regras`, `formato` e `callback`. Os critérios incluem palavras-chave, tecnologias, termos excluídos, níveis, modalidades, localização e a combinação Qualquer/Todos do perfil. Responda prontamente com HTTP 202 e use `pedidoId` (também enviado em `Idempotency-Key`) para reconhecer reenvios do disparo. Encaminhe ao modelo apenas os critérios, instruções, regras e formato. O workflow usa o token na etapa HTTP de retorno.
+
+Envie um único POST para `callback.url`, com `Content-Type: application/json` e `Authorization: Bearer <callback.token>`, dentro dos 30 minutos de validade do pedido. O lote aceita até 25 vagas, cada uma com título e URL do anúncio. Exemplo de retorno:
+
+```json
+{
+  "vagas": [
+    {
+      "titulo": "Desenvolvedor .NET",
+      "url": "https://empresa.example/vagas/123",
+      "empresa": "Empresa",
+      "localizacao": "Recife",
+      "modalidade": "Hibrido",
+      "nivel": "Pleno",
+      "descricao": "Desenvolvimento de APIs em C#."
+    }
+  ]
+}
+```
+
+Os valores de modalidade são `Remoto`, `Hibrido`, `Presencial` e `NaoInformado`. Os de nível são `Junior`, `Pleno`, `Senior` e `NaoInformado`. Campos opcionais podem ser omitidos e `publicadaEm` aceita data e hora ISO 8601 com fuso. Use `{"vagas":[]}` para uma busca sem resultados ou `{"erro":"Motivo da falha"}` para encerrar com erro.
+
+O callback retorna 200 para um lote aceito ou para sua repetição durante a validade do token. Um corpo inválido recebe 400 e pode ser corrigido. Um token inválido recebe 401, uma tentativa de substituir um lote aceito recebe 409 e um pedido expirado recebe 410. A deduplicação considera a URL normalizada ou a combinação empresa, título e localização das vagas do usuário, inclusive as descartadas e aplicadas. Links de candidaturas cadastradas manualmente também entram na comparação.

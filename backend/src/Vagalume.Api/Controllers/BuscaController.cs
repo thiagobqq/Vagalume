@@ -13,6 +13,7 @@ using Vagalume.Domain.Authorization;
 using Vagalume.Domain.Entities;
 using Vagalume.Domain.Enums;
 using Vagalume.Infra.Data;
+using Vagalume.Infra.Services.Busca.Agentes;
 
 namespace Vagalume.Api.Controllers;
 
@@ -26,8 +27,11 @@ public class BuscaController : ControllerBase
     private readonly BuscaEnfileirador _enfileirador;
     private readonly IEntitlementService _entitlements;
 
-    public BuscaController(AppDbContext db, IDateTimeProvider clock, BuscaEnfileirador enfileirador, IEntitlementService entitlements)
+    private readonly ICriptografiaService _cripto;
+
+    public BuscaController(AppDbContext db, IDateTimeProvider clock, BuscaEnfileirador enfileirador, IEntitlementService entitlements, ICriptografiaService cripto)
     {
+        _cripto = cripto;
         _db = db;
         _clock = clock;
         _enfileirador = enfileirador;
@@ -132,12 +136,17 @@ public class BuscaController : ControllerBase
         if (tipo == FonteTipo.Rss && identificador is null)
             return BadRequest(GenericResponseData<object>.Fail("RSS exige a URL do feed em 'identificador'"));
 
+        if (tipo == FonteTipo.Agente && !WebhookAgente.UrlValida(req.WebhookUrl?.Trim()))
+            return BadRequest(GenericResponseData<object>.Fail("Informe a URL HTTPS pública do webhook do agente"));
+
         var fonte = new FonteBusca
         {
             Id = Guid.NewGuid(),
             UsuarioId = usuarioId,
             Tipo = tipo,
-            Identificador = identificador,
+            Identificador = tipo == FonteTipo.Agente ? null : identificador,
+            WebhookCifrado = tipo == FonteTipo.Agente ? _cripto.Proteger(req.WebhookUrl!.Trim()) : null,
+            Instrucoes = tipo == FonteTipo.Agente ? req.Instrucoes?.Trim() : null,
             NomeEmpresa = string.IsNullOrWhiteSpace(req.NomeEmpresa) ? null : req.NomeEmpresa.Trim(),
             Nome = string.IsNullOrWhiteSpace(req.Nome) ? null : req.Nome.Trim(),
             Ativo = true,
@@ -163,7 +172,18 @@ public class BuscaController : ControllerBase
         if (!await FontePermitidaAsync(usuarioId, fonte.Tipo))
             return StatusCode(403, GenericResponseData<object>.Fail("Esta fonte é exclusiva para usuários verificados"));
 
-        if (req.Identificador is not null && !string.IsNullOrWhiteSpace(req.Identificador))
+        if (fonte.Tipo == FonteTipo.Agente)
+        {
+            if (req.WebhookUrl is not null)
+            {
+                if (!WebhookAgente.UrlValida(req.WebhookUrl.Trim()))
+                    return BadRequest(GenericResponseData<object>.Fail("Informe a URL HTTPS pública do webhook do agente"));
+                fonte.WebhookCifrado = _cripto.Proteger(req.WebhookUrl.Trim());
+            }
+            if (req.Instrucoes is not null)
+                fonte.Instrucoes = req.Instrucoes.Trim();
+        }
+        else if (req.Identificador is not null && !string.IsNullOrWhiteSpace(req.Identificador))
             fonte.Identificador = req.Identificador.Trim();
         if (req.NomeEmpresa is not null && !string.IsNullOrWhiteSpace(req.NomeEmpresa))
             fonte.NomeEmpresa = req.NomeEmpresa.Trim();
