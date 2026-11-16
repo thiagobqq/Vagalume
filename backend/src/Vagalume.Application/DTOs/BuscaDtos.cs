@@ -63,10 +63,17 @@ public class FonteBuscaDto
     public DateTime CriadoEm { get; set; }
 }
 
+public record CabecalhoWebhook(string Nome, string Valor);
+
 public class CriarFonteBuscaRequest
 {
     [Required(ErrorMessage = "Tipo é obrigatório")]
     public string Tipo { get; set; } = string.Empty;
+
+    public List<CabecalhoWebhook>? Cabecalhos { get; set; }
+
+    [MaxLength(1024)]
+    public string? SegredoOpenBot { get; set; }
 
     [MaxLength(2048)]
     public string? WebhookUrl { get; set; }
@@ -86,6 +93,11 @@ public class CriarFonteBuscaRequest
 
 public class AtualizarFonteBuscaRequest
 {
+    public List<CabecalhoWebhook>? Cabecalhos { get; set; }
+
+    [MaxLength(1024)]
+    public string? SegredoOpenBot { get; set; }
+
     [MaxLength(2048)]
     public string? WebhookUrl { get; set; }
 

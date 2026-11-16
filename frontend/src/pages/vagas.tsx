@@ -588,6 +588,9 @@ function FontesPanel({
   const verificado = hasPermissao(PERMISSOES.verifyUser)
   const [tipo, setTipo] = useState<string>(verificado ? "Gupy" : "Trampos")
   const [identificador, setIdentificador] = useState("")
+  const [cabecalhos, setCabecalhos] = useState<{ nome: string; valor: string; id: string }[]>([])
+  const [assinarWebhook, setAssinarWebhook] = useState(false)
+  const [segredoOpenBot, setSegredoOpenBot] = useState("")
   const [webhookUrl, setWebhookUrl] = useState("")
   const [instrucoes, setInstrucoes] = useState("")
   const [nomeEmpresa, setNomeEmpresa] = useState("")
@@ -612,15 +615,26 @@ function FontesPanel({
       setErro("Informe a URL HTTPS do webhook")
       return
     }
+    if (tipo === "Agente" && cabecalhos.some(c => !c.nome.trim() || !c.valor.trim())) {
+      setErro("Preencha o nome e o valor de cada cabeçalho de autenticação")
+      return
+    }
+    if (tipo === "Agente" && assinarWebhook && !segredoOpenBot.trim()) {
+      setErro("Informe o segredo para assinar o webhook")
+      return
+    }
     setAdicionando(true)
     setErro(null)
     try {
       await onAdicionar({
         tipo,
         ...(tipo === "Agente"
-          ? { webhookUrl: webhookUrl.trim(), instrucoes: instrucoes.trim(), nome: nomeEmpresa.trim() || null }
+          ? { webhookUrl: webhookUrl.trim(), cabecalhos: cabecalhos.map(c => ({ nome: c.nome.trim(), valor: c.valor.trim() })), segredoOpenBot: segredoOpenBot.trim() || undefined, instrucoes: instrucoes.trim(), nome: nomeEmpresa.trim() || null }
           : { identificador: identificador.trim() || null, nomeEmpresa: nomeEmpresa.trim() || null }),
       })
+      setCabecalhos([])
+      setAssinarWebhook(false)
+      setSegredoOpenBot("")
       setWebhookUrl("")
       setInstrucoes("")
       setIdentificador("")
@@ -715,6 +729,40 @@ function FontesPanel({
 
       {tipo === "Agente" && (
         <div className="mt-3 space-y-2">
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-medium">Cabeçalhos de autenticação (opcional)</legend>
+            <p className="text-xs text-muted-foreground">Use os nomes exigidos pelo seu workflow, como api-key, api-secret ou Authorization.</p>
+            {cabecalhos.map(c => (
+              <div key={c.id} className="flex flex-wrap gap-2">
+                <Input className="min-w-32 flex-1" aria-label="Nome do cabeçalho" placeholder="api-key" maxLength={128}
+                  value={c.nome} onChange={e => setCabecalhos(lista => lista.map(item => item.id === c.id ? { ...item, nome: e.target.value } : item))} />
+                <Input className="min-w-32 flex-1" aria-label="Valor do cabeçalho" placeholder="Valor" type="password" autoComplete="new-password" maxLength={4096}
+                  value={c.valor} onChange={e => setCabecalhos(lista => lista.map(item => item.id === c.id ? { ...item, valor: e.target.value } : item))} />
+                <Button variant="ghost" onClick={() => setCabecalhos(lista => lista.filter(item => item.id !== c.id))}>Remover</Button>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" disabled={cabecalhos.length >= 16}
+              onClick={() => setCabecalhos(lista => [...lista, { id: crypto.randomUUID(), nome: "", valor: "" }])}>Adicionar cabeçalho</Button>
+          </fieldset>
+          <label className="block space-y-1 text-xs font-medium">
+            Assinatura do webhook
+            <select className="block h-9 w-full rounded-md border bg-background px-3 text-sm"
+              value={assinarWebhook ? "openbot" : "nenhuma"}
+              onChange={e => {
+                setAssinarWebhook(e.target.value === "openbot")
+                setSegredoOpenBot("")
+              }}>
+              <option value="nenhuma">Sem assinatura</option>
+              <option value="openbot">HMAC-SHA256</option>
+            </select>
+          </label>
+          {assinarWebhook && (
+            <label className="block space-y-1 text-xs font-medium">
+              Segredo de assinatura
+              <Input type="password" autoComplete="new-password" maxLength={1024} value={segredoOpenBot}
+                onChange={e => setSegredoOpenBot(e.target.value)} />
+            </label>
+          )}
           <label className="block space-y-1 text-xs font-medium">
             Instruções ao agente (opcional)
             <Input maxLength={2000} value={instrucoes} onChange={(e) => setInstrucoes(e.target.value)}

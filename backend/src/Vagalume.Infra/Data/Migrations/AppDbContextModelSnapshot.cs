@@ -558,6 +558,9 @@ namespace Vagalume.Infra.Data.Migrations
                     b.Property<bool>("Ativo")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("CabecalhosCifrados")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone");
 
@@ -575,6 +578,9 @@ namespace Vagalume.Infra.Data.Migrations
                     b.Property<string>("NomeEmpresa")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("SegredoOpenBotCifrado")
+                        .HasColumnType("text");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
