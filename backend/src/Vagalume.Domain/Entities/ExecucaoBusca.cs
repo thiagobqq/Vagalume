@@ -20,5 +20,24 @@ public class ExecucaoBusca
 
     public List<ResultadoFonte> DetalhesPorFonte { get; set; } = new();
 
+    public void FinalizarSeConcluida(DateTime agora)
+    {
+        if (DetalhesPorFonte.Any(d => d.AguardandoAgente || d.FonteLocalPendenteId.HasValue))
+            return;
+        Sucesso = Erro is null && DetalhesPorFonte.All(d => d.Sucesso);
+        FinalizadaEm = agora;
+    }
+
+    public void InterromperColetaLocal(string motivo, DateTime agora)
+    {
+        foreach (var detalhe in DetalhesPorFonte.Where(d => d.FonteLocalPendenteId.HasValue))
+        {
+            detalhe.FonteLocalPendenteId = null;
+            detalhe.Erro = motivo;
+        }
+        Erro = motivo;
+        FinalizarSeConcluida(agora);
+    }
+
     public AppUser Usuario { get; set; } = null!;
 }

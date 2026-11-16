@@ -21,6 +21,7 @@ using Vagalume.Infra.Services.Analise;
 using Vagalume.Infra.Services.Auth;
 using Vagalume.Infra.Services.Busca;
 using Vagalume.Infra.Services.Busca.Fontes;
+using Vagalume.Infra.Services.Busca.Agentes;
 using Vagalume.Infra.Services.Busca.Notificacoes;
 using Vagalume.Infra.Services.Seguranca;
 
@@ -133,6 +134,13 @@ builder.Services.AddHttpClient(BuscaHttp.ClientName, client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd(buscaUserAgent);
 });
 
+builder.Services.AddHttpClient(WebhookAgente.Cliente, c => c.Timeout = TimeSpan.FromSeconds(10))
+    .RemoveAllLoggers()
+    .ConfigurePrimaryHttpMessageHandler(WebhookAgente.CriarHandler);
+builder.Services.AddScoped<DespachoAgente>();
+builder.Services.AddScoped<RetornoAgenteService>();
+builder.Services.AddScoped<ImportadorVagas>();
+builder.Services.AddHostedService<AgenteHostedService>();
 builder.Services.AddScoped<DedupService>();
 builder.Services.AddScoped<FiltroVagaService>();
 builder.Services.AddScoped<FonteVagasFactory>();
@@ -303,9 +311,10 @@ using (var scope = app.Services.CreateScope())
             var agora = clock.UtcNow;
             foreach (var orfa in orfas)
             {
-                orfa.Sucesso = false;
-                orfa.Erro = "Execução interrompida (reinício do serviço)";
-                orfa.FinalizadaEm = agora;
+                if (orfa.DetalhesPorFonte.Any(d => d.AguardandoAgente)
+                    && !orfa.DetalhesPorFonte.Any(d => d.FonteLocalPendenteId.HasValue)) continue;
+                orfa.InterromperColetaLocal("Coleta interrompida (reinício do serviço)", agora);
+                db.Entry(orfa).Property(e => e.DetalhesPorFonte).IsModified = true;
             }
             await db.SaveChangesAsync();
         }

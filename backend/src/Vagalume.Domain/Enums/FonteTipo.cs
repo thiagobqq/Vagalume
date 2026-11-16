@@ -8,5 +8,6 @@ public enum FonteTipo
     InfoJobs = 3,
     Catho = 4,
     Rss = 5,
-    LinkedIn = 6
+    LinkedIn = 6,
+    Agente = 7
 }

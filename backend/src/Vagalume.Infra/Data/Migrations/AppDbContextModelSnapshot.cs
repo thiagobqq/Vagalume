@@ -565,6 +565,9 @@ namespace Vagalume.Infra.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("Instrucoes")
+                        .HasColumnType("text");
+
                     b.Property<string>("Nome")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -581,11 +584,69 @@ namespace Vagalume.Infra.Data.Migrations
                     b.Property<Guid>("UsuarioId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("WebhookCifrado")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("FontesBusca");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.PedidoAgente", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CriteriosJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ExecucaoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FinalizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FonteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("HashRetorno")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Instrucoes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProximoEnvioEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Tentativas")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TokenCifrado")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiraEm")
+                        .HasFilter("\"FinalizadoEm\" IS NULL");
+
+                    b.HasIndex("ProximoEnvioEm")
+                        .HasFilter("\"FinalizadoEm\" IS NULL");
+
+                    b.HasIndex("ExecucaoId", "FonteId")
+                        .IsUnique();
+
+                    b.ToTable("PedidosAgente");
                 });
 
             modelBuilder.Entity("Vagalume.Domain.Entities.PerfilBusca", b =>
@@ -989,6 +1050,17 @@ namespace Vagalume.Infra.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.PedidoAgente", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.ExecucaoBusca", "Execucao")
+                        .WithMany()
+                        .HasForeignKey("ExecucaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Execucao");
                 });
 
             modelBuilder.Entity("Vagalume.Domain.Entities.PerfilBusca", b =>

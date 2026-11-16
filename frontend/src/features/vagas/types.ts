@@ -16,6 +16,8 @@ export type VagaDto = {
 }
 
 export type ResultadoFonteDto = {
+  coletando: boolean
+  aguardandoAgente: boolean
   fonteNome: string
   sucesso: boolean
   erro: string | null
@@ -39,6 +41,7 @@ export type ExecucaoBuscaDto = {
 }
 
 export type FonteBuscaDto = {
+  instrucoes: string | null
   id: string
   tipo: string
   identificador: string | null
@@ -68,14 +71,17 @@ export type SalvarPerfilBuscaRequest = Omit<PerfilBuscaDto, "ultimaExecucaoEm">
 
 export type CriarFonteBuscaRequest = {
   tipo: string
+  webhookUrl?: string
+  instrucoes?: string
   identificador?: string | null
   nomeEmpresa?: string | null
   nome?: string | null
 }
 
-export const FONTE_TIPOS = ["Gupy", "Trampos", "Programathor", "InfoJobs", "Catho", "LinkedIn", "Rss"] as const
+export const FONTE_TIPOS = ["Gupy", "Trampos", "Programathor", "InfoJobs", "Catho", "LinkedIn", "Rss", "Agente"] as const
 
 export const FONTE_LABEL: Record<string, string> = {
+  Agente: "Agente",
   Gupy: "Gupy",
   Trampos: "Trampos",
   Programathor: "Programathor",
@@ -86,6 +92,7 @@ export const FONTE_LABEL: Record<string, string> = {
 }
 
 export const FONTE_HINT: Record<string, string> = {
+  Agente: "O workflow recebe os critérios do perfil e envia as vagas ao Vagalume pelo endereço de retorno.",
   Gupy: "Busca em todo o portal pelas suas palavras-chave. Opcional: informe o slug da empresa (ex.: daycoval-tech) para restringir.",
   Trampos: "Busca por palavra-chave nas oportunidades do Trampos (TI, comunicação e design).",
   Programathor: "Portal de vagas de tecnologia; busca por palavra-chave.",
