@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -139,12 +140,18 @@ public class BuscaController : ControllerBase
         if (tipo == FonteTipo.Agente && !WebhookAgente.UrlValida(req.WebhookUrl?.Trim()))
             return BadRequest(GenericResponseData<object>.Fail("Informe a URL HTTPS pública do webhook do agente"));
 
+        if (!CabecalhosWebhook.Validos(req.Cabecalhos))
+            return BadRequest(GenericResponseData<object>.Fail("Confira os nomes e valores dos cabeçalhos. Use nomes distintos e próprios da autenticação."));
+
         var fonte = new FonteBusca
         {
             Id = Guid.NewGuid(),
             UsuarioId = usuarioId,
             Tipo = tipo,
             Identificador = tipo == FonteTipo.Agente ? null : identificador,
+            CabecalhosCifrados = tipo == FonteTipo.Agente ? CifrarCabecalhos(req.Cabecalhos) : null,
+            SegredoOpenBotCifrado = tipo == FonteTipo.Agente && !string.IsNullOrWhiteSpace(req.SegredoOpenBot)
+                ? _cripto.Proteger(req.SegredoOpenBot.Trim()) : null,
             WebhookCifrado = tipo == FonteTipo.Agente ? _cripto.Proteger(req.WebhookUrl!.Trim()) : null,
             Instrucoes = tipo == FonteTipo.Agente ? req.Instrucoes?.Trim() : null,
             NomeEmpresa = string.IsNullOrWhiteSpace(req.NomeEmpresa) ? null : req.NomeEmpresa.Trim(),
@@ -174,12 +181,20 @@ public class BuscaController : ControllerBase
 
         if (fonte.Tipo == FonteTipo.Agente)
         {
+            if (!CabecalhosWebhook.Validos(req.Cabecalhos))
+                return BadRequest(GenericResponseData<object>.Fail("Confira os nomes e valores dos cabeçalhos. Use nomes distintos e próprios da autenticação."));
             if (req.WebhookUrl is not null)
             {
                 if (!WebhookAgente.UrlValida(req.WebhookUrl.Trim()))
                     return BadRequest(GenericResponseData<object>.Fail("Informe a URL HTTPS pública do webhook do agente"));
+                if (req.WebhookUrl.Trim() != _cripto.Revelar(fonte.WebhookCifrado))
+                    fonte.CabecalhosCifrados = null;
                 fonte.WebhookCifrado = _cripto.Proteger(req.WebhookUrl.Trim());
             }
+            if (req.Cabecalhos is not null)
+                fonte.CabecalhosCifrados = CifrarCabecalhos(req.Cabecalhos);
+            if (req.SegredoOpenBot is not null)
+                fonte.SegredoOpenBotCifrado = string.IsNullOrWhiteSpace(req.SegredoOpenBot) ? null : _cripto.Proteger(req.SegredoOpenBot.Trim());
             if (req.Instrucoes is not null)
                 fonte.Instrucoes = req.Instrucoes.Trim();
         }
@@ -265,6 +280,9 @@ public class BuscaController : ControllerBase
 
         return Ok(GenericResponseData<List<ExecucaoBuscaDto>>.Ok(execucoes.Select(BuscaMapping.ToDto).ToList()));
     }
+
+    private string? CifrarCabecalhos(List<CabecalhoWebhook>? itens) =>
+        itens is { Count: > 0 } ? _cripto.Proteger(JsonSerializer.Serialize(itens)) : null;
 
     private async Task<bool> FontePermitidaAsync(Guid usuarioId, FonteTipo tipo)
     {

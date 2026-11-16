@@ -53,6 +53,9 @@ public class RetornoAgentePostgresTests
         db.FontesBusca.Add(new FonteBusca { UsuarioId = usuario.Id, Tipo = FonteTipo.Trampos });
         foreach (var nome in new[] { "A", "B", "C" })
             db.FontesBusca.Add(new FonteBusca { UsuarioId = usuario.Id, Tipo = FonteTipo.Agente,
+                CabecalhosCifrados = cripto.Proteger(JsonSerializer.Serialize(new[] {
+                    new CabecalhoWebhook("api-key", "chave-ficticia"), new CabecalhoWebhook("api-secret", "segredo-ficticio")
+                })),
                 Nome = nome, WebhookCifrado = cripto.Proteger("https://workflow.example/privado") });
         db.Candidaturas.Add(new Candidatura { UsuarioId = usuario.Id, Cargo = "Dev", Empresa = "Manual", Link = "https://vagas.example/manual" });
         db.Vagas.AddRange(VagaExistente(usuario.Id, "historico"), VagaExistente(outro.Id, "nova"));
@@ -82,6 +85,9 @@ public class RetornoAgentePostgresTests
                     var callback = json.RootElement.GetProperty("callback");
                     Assert.EndsWith($"/{pedido.Id}/retorno", callback.GetProperty("url").GetString());
                     Assert.Equal(pedido.Id.ToString(), Assert.Single(req.Headers.GetValues("Idempotency-Key")));
+                    Assert.Equal("chave-ficticia", Assert.Single(req.Headers.GetValues("api-key")));
+                    Assert.Equal("segredo-ficticio", Assert.Single(req.Headers.GetValues("api-secret")));
+                    Assert.DoesNotContain("segredo-ficticio", json.RootElement.GetRawText());
                     tokens.Add(pedido.Id, callback.GetProperty("token").GetString()!);
                     return new HttpResponseMessage(HttpStatusCode.Accepted);
                 });

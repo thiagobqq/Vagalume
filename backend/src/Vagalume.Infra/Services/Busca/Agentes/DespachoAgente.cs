@@ -65,6 +65,29 @@ public class DespachoAgente(AppDbContext db, IHttpClientFactory clientes, ICript
         {
             Content = JsonContent.Create(payload, options: ContratoAgente.Json)
         };
+        if (fonte?.CabecalhosCifrados is not null)
+        {
+            var json = cripto.Revelar(fonte.CabecalhosCifrados);
+            var itens = json is null ? null : JsonSerializer.Deserialize<List<CabecalhoWebhook>>(json);
+            if (itens is null || !CabecalhosWebhook.Validos(itens)
+                || itens.Any(item => !request.Headers.TryAddWithoutValidation(item.Nome, item.Valor)))
+            {
+                await retornos.FalharAsync(id, "Configure novamente os cabeçalhos de autenticação.", ct);
+                return;
+            }
+        }
+        if (fonte?.SegredoOpenBotCifrado is not null)
+        {
+            var segredo = cripto.Revelar(fonte.SegredoOpenBotCifrado);
+            if (string.IsNullOrEmpty(segredo))
+            {
+                await retornos.FalharAsync(id, "Configure novamente o segredo do OpenBot.", ct);
+                return;
+            }
+            var corpo = JsonSerializer.Serialize(new { type = "vagalume.busca", data = payload }, ContratoAgente.Json);
+            request.Content.Dispose();
+            OpenBotWebhook.Assinar(request, corpo, segredo, id, new DateTimeOffset(agora));
+        }
         request.Headers.Add("Idempotency-Key", id.ToString());
         try
         {

@@ -71,6 +71,8 @@ export type SalvarPerfilBuscaRequest = Omit<PerfilBuscaDto, "ultimaExecucaoEm">
 
 export type CriarFonteBuscaRequest = {
   tipo: string
+  cabecalhos?: { nome: string; valor: string }[]
+  segredoOpenBot?: string
   webhookUrl?: string
   instrucoes?: string
   identificador?: string | null
