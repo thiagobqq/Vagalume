@@ -26,6 +26,10 @@ public static class ContratoAgente
         Converters = { new JsonStringEnumConverter() }
     };
 
+    public static string CredencialMcp(Guid fonteId, string segredo) =>
+        Convert.ToHexStringLower(HMACSHA256.HashData(Encoding.UTF8.GetBytes(segredo),
+            Encoding.UTF8.GetBytes($"vagalume:mcp:v1:{fonteId}")));
+
     public static string Hash(string valor) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(valor)));
 
     public static PedidoAgente Preparar(Guid execucaoId, FonteBusca fonte, PerfilBusca perfil,

@@ -53,6 +53,7 @@ public class SalvarPerfilBuscaRequest
 
 public class FonteBuscaDto
 {
+    public bool RetornoMcp { get; set; }
     public string? Instrucoes { get; set; }
     public Guid Id { get; set; }
     public string Tipo { get; set; } = string.Empty;

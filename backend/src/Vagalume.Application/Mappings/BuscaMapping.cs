@@ -26,6 +26,7 @@ public static class BuscaMapping
     public static FonteBuscaDto ToDto(FonteBusca f) => new()
     {
         Id = f.Id,
+        RetornoMcp = f.SegredoOpenBotCifrado is not null,
         Tipo = f.Tipo.ToString(),
         Identificador = f.Identificador,
         Instrucoes = f.Instrucoes,

@@ -121,6 +121,25 @@ public class BuscaController : ControllerBase
         return Ok(GenericResponseData<List<FonteBuscaDto>>.Ok(fontes.Select(BuscaMapping.ToDto).ToList()));
     }
 
+    [HttpPost("fontes/{id:guid}/conexao-mcp")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> ConexaoMcp(Guid id, [FromServices] IConfiguration config, CancellationToken ct)
+    {
+        var usuarioId = User.GetUserId();
+        var cifrado = await _db.FontesBusca.Where(f => f.Id == id && f.UsuarioId == usuarioId)
+            .Select(f => f.SegredoOpenBotCifrado).SingleOrDefaultAsync(ct);
+        var segredo = _cripto.Revelar(cifrado);
+        if (string.IsNullOrEmpty(segredo)) return NotFound();
+        var origem = config["Busca:Agente:UrlPublica"]?.TrimEnd('/');
+        if (!WebhookAgente.UrlValida(origem))
+            return BadRequest(GenericResponseData<object>.Fail("Configure Busca__Agente__UrlPublica com a URL HTTPS pública do Vagalume."));
+        return Ok(GenericResponseData<object>.Ok(new
+        {
+            url = $"{origem}/api/busca/agente/fontes/{id}/mcp",
+            authorization = $"Bearer {ContratoAgente.CredencialMcp(id, segredo)}"
+        }));
+    }
+
     [HttpPost("fontes")]
     [ProducesResponseType(typeof(GenericResponseData<FonteBuscaDto>), 201)]
     [ProducesResponseType(typeof(GenericResponseData<object>), 400)]

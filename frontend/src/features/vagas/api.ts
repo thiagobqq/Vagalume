@@ -46,6 +46,10 @@ export function listarFontesBusca() {
   return apiJson<FonteBuscaDto[]>("/api/busca/fontes")
 }
 
+export function obterConexaoMcp(id: string) {
+  return apiJson<{ url: string; authorization: string }>(`/api/busca/fontes/${id}/conexao-mcp`, { method: "POST" })
+}
+
 export function criarFonteBusca(req: CriarFonteBuscaRequest) {
   return apiJson<FonteBuscaDto>("/api/busca/fontes", {
     method: "POST",
