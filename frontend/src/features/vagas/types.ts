@@ -41,6 +41,7 @@ export type ExecucaoBuscaDto = {
 }
 
 export type FonteBuscaDto = {
+  retornoMcp: boolean
   instrucoes: string | null
   id: string
   tipo: string

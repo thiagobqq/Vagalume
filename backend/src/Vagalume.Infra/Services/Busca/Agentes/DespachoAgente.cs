@@ -58,12 +58,20 @@ public class DespachoAgente(AppDbContext db, IHttpClientFactory clientes, ICript
                 opcionais = new[] { "empresa", "localizacao", "modalidade", "nivel", "descricao", "publicadaEm" },
                 modalidades = Enum.GetNames<ModalidadeVaga>(), niveis = Enum.GetNames<NivelVaga>()
             },
-            callback = new { url = $"{basePublica}/api/busca/agente/{id}/retorno", metodo = "POST", autenticacao = "Bearer", token }
+
         };
+        var evento = JsonSerializer.SerializeToNode(payload, ContratoAgente.Json)!.AsObject();
+        if (fonte?.SegredoOpenBotCifrado is null)
+            evento["callback"] = JsonSerializer.SerializeToNode(new
+            {
+                url = $"{basePublica}/api/busca/agente/{id}/retorno", metodo = "POST", autenticacao = "Bearer", token
+            });
+        else
+            evento["ferramentaRetorno"] = "entregar_vagas";
         using var cliente = clientes.CreateClient(WebhookAgente.Cliente);
         using var request = new HttpRequestMessage(HttpMethod.Post, destino)
         {
-            Content = JsonContent.Create(payload, options: ContratoAgente.Json)
+            Content = JsonContent.Create(evento, options: ContratoAgente.Json)
         };
         if (fonte?.CabecalhosCifrados is not null)
         {
@@ -84,7 +92,7 @@ public class DespachoAgente(AppDbContext db, IHttpClientFactory clientes, ICript
                 await retornos.FalharAsync(id, "Configure novamente o segredo do OpenBot.", ct);
                 return;
             }
-            var corpo = JsonSerializer.Serialize(new { type = "vagalume.busca", data = payload }, ContratoAgente.Json);
+            var corpo = JsonSerializer.Serialize(new { type = "vagalume.busca", data = evento }, ContratoAgente.Json);
             request.Content.Dispose();
             OpenBotWebhook.Assinar(request, corpo, segredo, id, new DateTimeOffset(agora));
         }
@@ -97,12 +105,12 @@ public class DespachoAgente(AppDbContext db, IHttpClientFactory clientes, ICript
             else if ((int)response.StatusCode < 500 && (int)response.StatusCode is not (408 or 429))
                 await retornos.FalharAsync(id, $"Webhook recusou o pedido (HTTP {(int)response.StatusCode}).", ct);
             else if (pedido.Tentativas >= 2)
-                await AguardarRetornoAsync(id, ct);
+                await retornos.FalharAsync(id, $"Webhook respondeu HTTP {(int)response.StatusCode} após 3 tentativas.", ct);
         }
         catch (Exception ex) when ((ex is HttpRequestException || ex is OperationCanceledException) && !ct.IsCancellationRequested)
         {
-            // A resposta pode ter se perdido após o workflow aceitar o pedido.
-            if (pedido.Tentativas >= 2) await AguardarRetornoAsync(id, ct);
+            if (pedido.Tentativas >= 2)
+                await retornos.FalharAsync(id, "O webhook não confirmou o recebimento após 3 tentativas.", ct);
         }
     }
 

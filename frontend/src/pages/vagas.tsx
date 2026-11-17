@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { obterConexaoMcp } from "@/features/vagas/api"
 import { useVagas } from "@/hooks/use-vagas"
 import { useBuscaConfig } from "@/hooks/use-busca"
 import { useAplicacaoPendente } from "@/hooks/use-aplicacao-pendente"
@@ -228,6 +229,7 @@ function InboxTab() {
     limpar()
   }
 
+  const aguardandoAgente = execucaoAtual?.detalhesPorFonte.some(d => d.aguardandoAgente)
   const filtradas = useMemo(() => {
     if (!q) return vagas
     const s = q.toLowerCase()
@@ -247,7 +249,7 @@ function InboxTab() {
           }}
         >
           {executando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-          {executando ? "buscando..." : "buscar agora"}
+          {aguardandoAgente ? "aguardando agente…" : executando ? "buscando..." : "buscar agora"}
         </Button>
         <Button variant="outline" className="gap-1.5 text-muted-foreground hover:text-foreground" onClick={refresh} disabled={executando}>
           <RefreshCw className="h-4 w-4" /> atualizar
@@ -256,8 +258,8 @@ function InboxTab() {
 
       {executando && (
         <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          {execucaoAtual?.detalhesPorFonte.some((d) => d.aguardandoAgente)
-            ? "Aguardando agente. Você pode fechar a página e consultar o resultado depois."
+          {aguardandoAgente
+            ? "O agente tem até 30 minutos a partir do pedido para devolver as vagas. Você pode fechar esta página."
             : "Buscando vagas… A lista e as métricas atualizam sozinhas."}
         </div>
       )}
@@ -573,6 +575,37 @@ function ConfigTab() {
   )
 }
 
+function ConexaoMcp({ fonteId }: { fonteId: string }) {
+  const [conexao, setConexao] = useState<Awaited<ReturnType<typeof obterConexaoMcp>> | null>(null)
+  const [erro, setErro] = useState("")
+  const [carregando, setCarregando] = useState(false)
+  const [copiado, setCopiado] = useState(false)
+  async function abrir() {
+    setErro("")
+    setCopiado(false)
+    setCarregando(true)
+    try { setConexao(await obterConexaoMcp(fonteId)) }
+    catch (e) { setErro((e as Error).message) }
+    finally { setCarregando(false) }
+  }
+  return <div className="w-full space-y-2 text-xs">
+    <Button size="sm" variant="outline" disabled={carregando}
+      onClick={() => conexao ? setConexao(null) : void abrir()}>
+      {conexao ? "Fechar configuração" : "Configurar retorno MCP"}
+    </Button>
+    {conexao && <div className="space-y-2">
+      <p>No OpenBot, adicione um app MCP HTTP e conceda ao agente acesso à ferramenta entregar_vagas.</p>
+      <label className="block">URL do servidor MCP<Input readOnly value={conexao.url} onFocus={e => e.target.select()} /></label>
+      <Button size="sm" variant="outline" onClick={async () => {
+        try { await navigator.clipboard.writeText(conexao.authorization); setCopiado(true); setErro("") }
+        catch { setErro("Selecione o valor do cabeçalho e copie manualmente.") }
+      }}>{copiado ? "Authorization copiado" : "Copiar valor de Authorization"}</Button>
+      <Input aria-label="Valor do cabeçalho Authorization" type="password" readOnly value={conexao.authorization} onFocus={e => e.target.select()} />
+    </div>}
+    {erro && <p role="alert">{erro}</p>}
+  </div>
+}
+
 function FontesPanel({
   fontes,
   onAdicionar,
@@ -770,11 +803,12 @@ function FontesPanel({
           </label>
           <details className="text-xs text-muted-foreground">
             <summary className="cursor-pointer">Como configurar o retorno do workflow</summary>
-            <p className="mt-2">Responda ao disparo com HTTP 202. Quando a busca terminar, envie um POST para
+            {assinarWebhook ? <p className="mt-2">Após salvar a fonte, abra “Configurar retorno MCP”. O agente recebe o pedidoId e entrega as vagas pela ferramenta entregar_vagas dentro de 30 minutos.</p> : <>
+            <p className="mt-2">Confirme o recebimento com uma resposta HTTP 2xx. Quando a busca terminar, envie um POST para
               <code> callback.url</code>, com o cabeçalho <code>Authorization: Bearer &lt;callback.token&gt;</code>
               {" "}e o corpo em JSON. Envie até 25 vagas em um único lote, dentro de 30 minutos.</p>
             <pre className="mt-2 overflow-x-auto rounded bg-muted p-2">{'{"vagas":[{"titulo":"Analista","url":"https://empresa.com/vagas/123"}]}'}</pre>
-            <p className="mt-1">Se nenhuma vaga atender ao perfil, envie <code>{'{"vagas":[]}'}</code>.</p>
+            <p className="mt-1">Se nenhuma vaga atender ao perfil, envie <code>{'{"vagas":[]}'}</code>.</p></>}
           </details>
         </div>
       )}
@@ -828,6 +862,7 @@ function FontesPanel({
               >
                 <Trash2 className="h-3.5 w-3.5" /> remover
               </Button>
+              {f.retornoMcp && <ConexaoMcp fonteId={f.id} />}
             </div>
           ))
         )}

@@ -127,6 +127,61 @@ public class RetornoAgentePostgresTests
         }
     }
 
+    [PostgresAgenteFact]
+    public async Task WebhookIndisponivel_EncerraBuscaNaTerceiraFalha()
+    {
+        await using var db = new AppDbContext(_options);
+        await db.Database.MigrateAsync();
+        var usuario = new AppUser { Id = Guid.NewGuid(), Nome = "Teste" };
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Busca:Agente:UrlPublica"] = "https://vagalume.example"
+        }).Build();
+        var cripto = new CriptografiaAesGcm(config);
+        var fonte = new FonteBusca { Id = Guid.NewGuid(), UsuarioId = usuario.Id, Tipo = FonteTipo.Agente,
+            SegredoOpenBotCifrado = cripto.Proteger("segredo-de-teste"),
+            WebhookCifrado = cripto.Proteger("https://workflow.example/teste") };
+        var execucao = new ExecucaoBusca { Id = Guid.NewGuid(), UsuarioId = usuario.Id, IniciadaEm = _clock.UtcNow };
+        var pedido = ContratoAgente.Preparar(execucao.Id, fonte, new PerfilBusca(), cripto, _clock.UtcNow);
+        execucao.DetalhesPorFonte.Add(new ResultadoFonte { PedidoAgenteId = pedido.Id, AguardandoAgente = true });
+        db.AddRange(usuario, fonte, execucao, pedido);
+        await db.SaveChangesAsync();
+        try
+        {
+            Assert.Equal(EstadoRetorno.Invalido, await Retornos(db).ReceberDaFonteAsync(pedido.Id, Guid.NewGuid(),
+                new RetornoAgente { Vagas = [] }, default));
+            var handler = new StubHttpMessageHandler(req =>
+            {
+                var corpo = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+                using var json = JsonDocument.Parse(corpo);
+                var data = json.RootElement.GetProperty("data");
+                Assert.False(data.TryGetProperty("callback", out _));
+                Assert.DoesNotContain(cripto.Revelar(pedido.TokenCifrado)!, corpo);
+                Assert.Equal("entregar_vagas", data.GetProperty("ferramentaRetorno").GetString());
+                Assert.Equal(pedido.Id.ToString(), Assert.Single(req.Headers.GetValues("X-OpenBot-Delivery-Id")));
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+            });
+            for (var tentativa = 1; tentativa <= 3; tentativa++)
+            {
+                db.ChangeTracker.Clear();
+                await new DespachoAgente(db, new StubHttpClientFactory(handler), cripto, config, Retornos(db), _clock)
+                    .ProcessarAsync(pedido.Id, default);
+                var estado = await db.ExecucoesBusca.AsNoTracking().SingleAsync(e => e.Id == execucao.Id);
+                Assert.Equal(tentativa == 3, estado.FinalizadaEm.HasValue);
+                if (tentativa == 3)
+                {
+                    Assert.False(estado.Sucesso);
+                    Assert.Contains("503", Assert.Single(estado.DetalhesPorFonte).Erro);
+                }
+                _clock.UtcNow = _clock.UtcNow.AddMinutes(1);
+            }
+        }
+        finally
+        {
+            await db.Users.Where(u => u.Id == usuario.Id).ExecuteDeleteAsync();
+        }
+    }
+
     private async Task<EstadoRetorno> Receber(Guid id, string token, RetornoAgente retorno)
     {
         await using var db = new AppDbContext(_options);

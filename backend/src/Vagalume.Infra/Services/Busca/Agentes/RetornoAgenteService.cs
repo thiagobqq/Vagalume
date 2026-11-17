@@ -17,15 +17,18 @@ public class RetornoAgenteService(AppDbContext db, IDateTimeProvider clock, Dedu
     public Task<EstadoRetorno> ReceberAsync(Guid id, string token, RetornoAgente retorno, CancellationToken ct)
         => FinalizarAsync(id, token, retorno, null, ct);
 
+    public Task<EstadoRetorno> ReceberDaFonteAsync(Guid id, Guid fonteAutenticada, RetornoAgente retorno, CancellationToken ct)
+        => FinalizarAsync(id, null, retorno, null, ct, fonteAutenticada);
+
     internal Task<EstadoRetorno> FalharAsync(Guid id, string motivo, CancellationToken ct)
         => FinalizarAsync(id, null, null, motivo, ct);
 
     private async Task<EstadoRetorno> FinalizarAsync(Guid id, string? token, RetornoAgente? retorno,
-        string? motivo, CancellationToken ct)
+        string? motivo, CancellationToken ct, Guid? fonteAutenticada = null)
     {
-        var dados = await db.PedidosAgente.AsNoTracking().Where(p => p.Id == id)
+        var dados = await db.PedidosAgente.AsNoTracking().Where(p => p.Id == id && (fonteAutenticada == null || p.FonteId == fonteAutenticada))
             .Select(p => new { p.ExecucaoId, p.TokenHash }).SingleOrDefaultAsync(ct);
-        if (dados is null || (retorno is not null && (token?.Length != 64 ||
+        if (dados is null || (retorno is not null && fonteAutenticada is null && (token?.Length != 64 ||
             !CryptographicOperations.FixedTimeEquals(Convert.FromHexString(dados.TokenHash),
                 Convert.FromHexString(ContratoAgente.Hash(token))))))
             return EstadoRetorno.Invalido;
