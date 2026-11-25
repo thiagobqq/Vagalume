@@ -1,6 +1,4 @@
-import { useMemo, useState } from "react"
-import { Link } from "react-router-dom"
-import { PageHeader } from "@/components/app/page-header"
+import { useEffect, useMemo, useState } from "react"
 import { NotebookCard, NotebookPanel } from "@/components/app/notebook-panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,8 +9,6 @@ import type { CandidaturaFluxoDto, PeriodoFiltro, SelecaoSankey } from "@/featur
 import { useMetricasFunil } from "@/hooks/use-metricas-funil"
 import { ORIGEM_LABEL, ORIGEM_VALUES, STATUS_LABEL, type Origem, type Status } from "@/features/candidaturas/types"
 import { STATUS_STYLE } from "@/features/candidaturas/status-style"
-import { CandidaturaDetailDialog } from "@/features/candidaturas/candidatura-detail-dialog"
-import { mudarStatus } from "@/features/candidaturas/api"
 import {
   ArrowRight,
   Clock,
@@ -71,7 +67,6 @@ function candidaturaPertenceASelecao(c: CandidaturaFluxoDto, selecao: SelecaoSan
   if (!selecao) return false
   if (selecao.tipo === "fluxo") {
     const { origem, destino } = selecao
-    // Fluxo terminal sintético (Aguardando / EmAndamento)
     if (destino === "Aguardando" || destino === "EmAndamento") {
       return c.destinoFinalSankey === destino && c.caminho[c.caminho.length - 1] === origem
     }
@@ -81,20 +76,29 @@ function candidaturaPertenceASelecao(c: CandidaturaFluxoDto, selecao: SelecaoSan
     return false
   }
 
-  // Seleção de nó
   if (selecao.id === "Aguardando" || selecao.id === "EmAndamento") {
     return c.destinoFinalSankey === selecao.id
   }
   return c.caminho.includes(selecao.id)
 }
 
-export function MetricasPage() {
+type Props = {
+  /** incrementa quando o Kanban cria, edita ou move uma candidatura */
+  syncVersion?: number
+  onOpenDetail: (id: string) => void
+  onGoToKanban?: () => void
+}
+
+export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanban }: Props) {
   const [periodo, setPeriodo] = useState<PeriodoFiltro>("all")
   const [origem, setOrigem] = useState<string>("all")
   const [selecao, setSelecao] = useState<SelecaoSankey>(null)
-  const [detailId, setDetailId] = useState<string | null>(null)
 
   const { data, loading, error, refresh } = useMetricasFunil(periodo, origem)
+
+  useEffect(() => {
+    if (syncVersion > 0) void refresh()
+  }, [syncVersion, refresh])
 
   const candidaturasFiltradas = useMemo(() => {
     if (!data || !selecao) return []
@@ -141,13 +145,11 @@ export function MetricasPage() {
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader
-        title="Dashboard do funil"
-        description="Histórico de transições das suas candidaturas: veja quantas avançaram, pararam ou foram direto encerradas."
-      >
+      {/* Barra de filtros */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Select value={periodo} onValueChange={handlePeriodoChange}>
-            <SelectTrigger className="h-9 w-[160px] border-ink/70 bg-card text-xs shadow-hard-xs">
+            <SelectTrigger className="h-9 w-[165px] border-ink/70 bg-card text-xs shadow-hard-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -160,7 +162,7 @@ export function MetricasPage() {
           </Select>
 
           <Select value={origem} onValueChange={handleOrigemChange}>
-            <SelectTrigger className="h-9 w-[160px] border-ink/70 bg-card text-xs shadow-hard-xs">
+            <SelectTrigger className="h-9 w-[170px] border-ink/70 bg-card text-xs shadow-hard-xs">
               <Filter className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
@@ -174,16 +176,31 @@ export function MetricasPage() {
             </SelectContent>
           </Select>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refresh}
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
-          >
-            <RefreshCw className="h-4 w-4" /> atualizar
-          </Button>
+          {(periodo !== "all" || origem !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setSelecao(null)
+                setPeriodo("all")
+                setOrigem("all")
+              }}
+            >
+              limpar filtros
+            </Button>
+          )}
         </div>
-      </PageHeader>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={refresh}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="h-4 w-4" /> atualizar métricas
+        </Button>
+      </div>
 
       {error && (
         <div className="flex items-center justify-between gap-3 rounded-xl border-[1.5px] border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
@@ -227,11 +244,11 @@ export function MetricasPage() {
               <p className="max-w-md text-sm text-muted-foreground">
                 {periodo !== "all" || origem !== "all"
                   ? "Experimente ampliar o período ou remover o filtro de origem para ver o histórico completo."
-                  : "Cadastre suas candidaturas e mova os cards entre as etapas no Kanban para acompanhar o diagrama de Sankey."}
+                  : "Cadastre suas candidaturas e mova os cards entre as etapas no Quadro para acompanhar o fluxo das suas vagas."}
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2">
-              {(periodo !== "all" || origem !== "all") ? (
+              {periodo !== "all" || origem !== "all" ? (
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -241,13 +258,11 @@ export function MetricasPage() {
                 >
                   Limpar filtros
                 </Button>
-              ) : (
-                <Button asChild className="gap-1.5">
-                  <Link to="/app">
-                    <Kanban className="h-4 w-4" /> Ir para Candidaturas
-                  </Link>
+              ) : onGoToKanban ? (
+                <Button onClick={onGoToKanban} className="gap-1.5">
+                  <Kanban className="h-4 w-4" /> Voltar para o Quadro
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </NotebookPanel>
@@ -334,7 +349,7 @@ export function MetricasPage() {
 
           {/* Diagrama de Sankey */}
           <NotebookPanel
-            title="Fluxo de transição das vagas (Sankey)"
+            title="Fluxo de transição das vagas"
             description="Distribuição proporcional do caminho percorrido pelas suas candidaturas desde Aplicado até o desfecho."
             headerColor="var(--primary)"
             holes
@@ -352,7 +367,6 @@ export function MetricasPage() {
               onSelect={setSelecao}
             />
 
-            {/* Lista interativa de vagas do fluxo/nó selecionado */}
             {selecao && (
               <div className="mt-4 rounded-xl border-[1.5px] border-ink/20 bg-[var(--nb-paper)]/80 p-3.5">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -380,7 +394,7 @@ export function MetricasPage() {
                       <button
                         key={c.id}
                         type="button"
-                        onClick={() => setDetailId(c.id)}
+                        onClick={() => onOpenDetail(c.id)}
                         className="flex flex-col gap-1.5 rounded-xl border border-ink/20 bg-card p-3 text-left shadow-hard-xs transition-transform hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -416,7 +430,7 @@ export function MetricasPage() {
             )}
           </NotebookPanel>
 
-          {/* Detalhamento inferior: Histórico bruto de transições + Conversão por origem */}
+          {/* Histórico de transições + Desempenho por origem */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <NotebookPanel
               title="Histórico de transições"
@@ -469,9 +483,7 @@ export function MetricasPage() {
                           </div>
 
                           <div className="flex items-center gap-2 text-xs">
-                            <span className="font-extrabold">
-                              {t.quantidade}x
-                            </span>
+                            <span className="font-extrabold">{t.quantidade}x</span>
                             {t.candidaturasUnicas !== t.quantidade && (
                               <span className="text-[11px] text-muted-foreground">
                                 ({t.candidaturasUnicas} vagas)
@@ -527,7 +539,6 @@ export function MetricasPage() {
                         </span>
                       </div>
 
-                      {/* Barra empilhada: Avançaram / Aguardando / Diretas encerradas */}
                       <div className="flex h-2.5 w-full overflow-hidden rounded-full border border-ink/15 bg-muted">
                         {pctAvancou > 0 && (
                           <div
@@ -590,20 +601,6 @@ export function MetricasPage() {
           </div>
         </>
       ) : null}
-
-      <CandidaturaDetailDialog
-        id={detailId}
-        open={!!detailId}
-        onOpenChange={(o) => {
-          if (!o) setDetailId(null)
-        }}
-        onUpdated={refresh}
-        onStatusChange={async (status) => {
-          if (!detailId) return
-          await mudarStatus(detailId, { status })
-          await refresh()
-        }}
-      />
     </div>
   )
 }

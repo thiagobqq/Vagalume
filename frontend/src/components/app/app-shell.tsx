@@ -12,12 +12,11 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/features/auth/auth-context"
 import { PERMISSOES } from "@/features/auth/permissoes"
-import { BarChart3, Kanban, FileText, LogOut, Menu, Sparkles, ShieldCheck, Zap } from "lucide-react"
+import { Kanban, FileText, LogOut, Menu, Sparkles, ShieldCheck, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV = [
   { to: "/app", label: "Candidaturas", icon: Kanban, end: true, permissao: undefined },
-  { to: "/app/metricas", label: "Dashboard", icon: BarChart3, end: false, permissao: undefined },
   { to: "/app/vagas", label: "Busca de vagas", icon: Zap, end: false, permissao: undefined },
   { to: "/app/curriculos", label: "Currículos", icon: FileText, end: false, permissao: undefined },
   { to: "/app/admin", label: "Permissões", icon: ShieldCheck, end: false, permissao: PERMISSOES.admin },
