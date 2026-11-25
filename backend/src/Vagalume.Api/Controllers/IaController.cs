@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Vagalume.Api.Extensions;
 using Vagalume.Application.Common;
@@ -85,7 +86,12 @@ public class IaController : ControllerBase
         var config = await _db.ConfiguracoesIa.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
 
         var temChaveEnviada = !string.IsNullOrWhiteSpace(req.ApiKey);
-        if (!temChaveEnviada && string.IsNullOrWhiteSpace(config?.ApiKeyCriptografada) && preset.RequerChave)
+        var trocouProvedor = config is not null && config.Provedor != provedor;
+        var podeReusarChaveSalva = config is not null
+            && !trocouProvedor
+            && !string.IsNullOrWhiteSpace(config.ApiKeyCriptografada);
+
+        if (!temChaveEnviada && !podeReusarChaveSalva && preset.RequerChave)
             return BadRequest(GenericResponseData<object>.Fail("Informe a API key do provedor de IA"));
 
         var agora = _clock.UtcNow;
@@ -98,8 +104,12 @@ public class IaController : ControllerBase
         config.Provedor = provedor;
         config.Modelo = req.Modelo.Trim();
         config.Ativo = req.Ativo;
+
         if (temChaveEnviada)
             config.ApiKeyCriptografada = _cripto.Proteger(req.ApiKey!.Trim());
+        else if (trocouProvedor || !preset.RequerChave)
+            config.ApiKeyCriptografada = null;
+
         config.AtualizadoEm = agora;
 
         await _db.SaveChangesAsync();
@@ -108,7 +118,23 @@ public class IaController : ControllerBase
         return Ok(GenericResponseData<ConfiguracaoIaDto>.Ok(IaMapping.ToDto(config, chave), "Configuração de IA salva"));
     }
 
+    [HttpDelete("configuracao")]
+    [ProducesResponseType(typeof(GenericResponseData<object>), 200)]
+    public async Task<IActionResult> Remover()
+    {
+        var usuarioId = User.GetUserId();
+        var config = await _db.ConfiguracoesIa.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
+        if (config is not null)
+        {
+            _db.ConfiguracoesIa.Remove(config);
+            await _db.SaveChangesAsync();
+        }
+
+        return Ok(GenericResponseData<object?>.Ok(null, "Configuração de IA removida"));
+    }
+
     [HttpPost("testar")]
+    [EnableRateLimiting("ia")]
     [ProducesResponseType(typeof(GenericResponseData<TestarIaResponse>), 200)]
     [ProducesResponseType(typeof(GenericResponseData<object>), 400)]
     public async Task<IActionResult> Testar([FromBody] TestarIaRequest req, CancellationToken ct)
@@ -120,12 +146,14 @@ public class IaController : ControllerBase
         if (preset is null)
             return BadRequest(GenericResponseData<object>.Fail("Provedor de IA não suportado neste servidor"));
 
-        var chave = req.ApiKey;
+        var chave = req.ApiKey?.Trim();
         if (string.IsNullOrWhiteSpace(chave))
         {
             var usuarioId = User.GetUserId();
-            var config = await _db.ConfiguracoesIa.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
-            chave = _cripto.Revelar(config?.ApiKeyCriptografada);
+            var config = await _db.ConfiguracoesIa.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId, ct);
+            // Só reutiliza a chave salva quando pertence ao mesmo provedor sendo testado (evita vazamento entre provedores)
+            if (config is not null && config.Provedor == provedor)
+                chave = _cripto.Revelar(config.ApiKeyCriptografada);
         }
 
         if (string.IsNullOrWhiteSpace(chave) && preset.RequerChave)
@@ -149,6 +177,12 @@ public class IaController : ControllerBase
         {
             return Ok(GenericResponseData<TestarIaResponse>.Ok(
                 new TestarIaResponse { Ok = false, Mensagem = ex.Message }, ex.Message));
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            const string msg = "O provedor de IA excedeu o tempo limite.";
+            return Ok(GenericResponseData<TestarIaResponse>.Ok(
+                new TestarIaResponse { Ok = false, Mensagem = msg }, msg));
         }
     }
 }

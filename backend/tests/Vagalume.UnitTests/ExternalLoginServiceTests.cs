@@ -71,6 +71,17 @@ public class ExternalLoginServiceTests
         var porLogin = await userManager.FindByLoginAsync(ExternalLoginService.GoogleProvider, "sub-2");
         Assert.NotNull(porLogin);
         Assert.Equal(local.Id, porLogin!.Id);
+        // Senha pré-existente não confirmada deve ser invalidada ao vincular login verificado do Google
+        Assert.False(await userManager.HasPasswordAsync(user));
+    }
+
+    [Fact]
+    public async Task RejeitaEmailGoogleNaoVerificado()
+    {
+        var (service, _) = Criar();
+        var info = new GoogleUserInfo("sub-unverified", "nao-verificado@empresa.com", false, "Alguem");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.FindOrCreateGoogleUserAsync(info));
     }
 
     [Fact]

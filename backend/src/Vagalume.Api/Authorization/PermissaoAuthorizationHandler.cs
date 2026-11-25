@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Vagalume.Api.Extensions;
 using Vagalume.Domain.Abstractions;
+using Vagalume.Domain.Authorization;
 
 namespace Vagalume.Api.Authorization;
 
@@ -20,6 +21,16 @@ public class PermissaoAuthorizationHandler : AuthorizationHandler<PermissaoRequi
             return;
 
         if (await _entitlements.HasAsync(usuarioId.Value, requirement.Chave))
+        {
             context.Succeed(requirement);
+            return;
+        }
+
+        // Admin implicitamente tem acesso aos recursos de verify_user
+        if (requirement.Chave == Permissoes.VerifyUser
+            && await _entitlements.HasAsync(usuarioId.Value, Permissoes.Admin))
+        {
+            context.Succeed(requirement);
+        }
     }
 }

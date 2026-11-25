@@ -11,6 +11,7 @@ public interface IExternalLoginService
 public class ExternalLoginService : IExternalLoginService
 {
     public const string GoogleProvider = "Google";
+    private const int MaxNomeLength = 150;
 
     private readonly UserManager<AppUser> _userManager;
 
@@ -19,14 +20,21 @@ public class ExternalLoginService : IExternalLoginService
         _userManager = userManager;
     }
 
-    public async Task<AppUser> FindOrCreateGoogleUserAsync(GoogleUserInfo info)
+    public Task<AppUser> FindOrCreateGoogleUserAsync(GoogleUserInfo info)
+        => FindOrCreateGoogleUserAsync(info, tentativa: 0);
+
+    private async Task<AppUser> FindOrCreateGoogleUserAsync(GoogleUserInfo info, int tentativa)
     {
+        if (!info.EmailVerified)
+            throw new InvalidOperationException("O e-mail da conta Google não está verificado.");
+
         var email = info.Email.Trim().ToLowerInvariant();
+        var nomeSeguro = TruncarNome(info.Nome, email);
 
         var porLogin = await _userManager.FindByLoginAsync(GoogleProvider, info.Subject);
         if (porLogin is not null)
         {
-            if (info.EmailVerified && !porLogin.EmailConfirmed)
+            if (!porLogin.EmailConfirmed)
                 await MarcarEmailConfirmadoAsync(porLogin);
             return porLogin;
         }
@@ -34,13 +42,22 @@ public class ExternalLoginService : IExternalLoginService
         var existente = await _userManager.FindByEmailAsync(email);
         if (existente is not null)
         {
+            var eraNaoConfirmado = !existente.EmailConfirmed;
+
             var vinculo = await _userManager.AddLoginAsync(
                 existente,
                 new UserLoginInfo(GoogleProvider, info.Subject, GoogleProvider));
             if (!vinculo.Succeeded)
                 throw new InvalidOperationException(Descrever(vinculo));
 
-            if (info.EmailVerified && !existente.EmailConfirmed)
+            // Mitiga pre-hijacking: se alguém pré-registrou o e-mail com senha sem confirmá-lo,
+            // invalida a senha não verificada ao vincular o login verificado do Google.
+            if (eraNaoConfirmado && await _userManager.HasPasswordAsync(existente))
+            {
+                await _userManager.RemovePasswordAsync(existente);
+            }
+
+            if (!existente.EmailConfirmed)
                 await MarcarEmailConfirmadoAsync(existente);
 
             return existente;
@@ -49,18 +66,21 @@ public class ExternalLoginService : IExternalLoginService
         var novo = new AppUser
         {
             Id = Guid.NewGuid(),
-            Nome = info.Nome,
+            Nome = nomeSeguro,
             UserName = email,
             Email = email,
-            EmailConfirmed = info.EmailVerified
+            EmailConfirmed = true
         };
 
         var criado = await _userManager.CreateAsync(novo);
         if (!criado.Succeeded)
         {
-            var concorrente = await _userManager.FindByEmailAsync(email);
-            if (concorrente is not null)
-                return await FindOrCreateGoogleUserAsync(info);
+            if (tentativa == 0)
+            {
+                var concorrente = await _userManager.FindByEmailAsync(email);
+                if (concorrente is not null)
+                    return await FindOrCreateGoogleUserAsync(info, tentativa + 1);
+            }
 
             throw new InvalidOperationException(Descrever(criado));
         }
@@ -75,6 +95,12 @@ public class ExternalLoginService : IExternalLoginService
         }
 
         return novo;
+    }
+
+    private static string TruncarNome(string? nome, string email)
+    {
+        var valor = string.IsNullOrWhiteSpace(nome) ? email.Split('@')[0] : nome.Trim();
+        return valor.Length <= MaxNomeLength ? valor : valor[..MaxNomeLength];
     }
 
     private async Task MarcarEmailConfirmadoAsync(AppUser user)

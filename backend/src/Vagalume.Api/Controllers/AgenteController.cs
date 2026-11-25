@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Vagalume.Application.Common;
 using Vagalume.Application.DTOs;
 using Vagalume.Infra.Services.Busca.Agentes;
@@ -8,6 +9,7 @@ namespace Vagalume.Api.Controllers;
 
 [ApiController]
 [Route("api/busca/agente")]
+[EnableRateLimiting("agente")]
 public class AgenteController(RetornoAgenteService service) : ControllerBase
 {
     [HttpPost("{id:guid}/retorno"), AllowAnonymous, RequestSizeLimit(2_000_000)]

@@ -57,6 +57,25 @@ public static class ObservabilityExtensions
                 .AddHttpClientInstrumentation(opts =>
                 {
                     opts.RecordException = true;
+                    opts.EnrichWithHttpRequestMessage = (activity, request) =>
+                    {
+                        var uri = request.RequestUri;
+                        if (uri is null)
+                            return;
+
+                        var host = uri.Host;
+                        var path = uri.AbsolutePath;
+                        var ehWebhookSensivel = host.Contains("discord", StringComparison.OrdinalIgnoreCase)
+                            || path.Contains("/webhooks/", StringComparison.OrdinalIgnoreCase)
+                            || path.Contains("/hook", StringComparison.OrdinalIgnoreCase);
+
+                        if (ehWebhookSensivel)
+                        {
+                            activity.SetTag("url.full", $"{uri.Scheme}://{uri.Host}/[REDACTED]");
+                            activity.SetTag("url.path", "/[REDACTED]");
+                            activity.SetTag("url.query", null);
+                        }
+                    };
                 })
                 .AddNpgsql())
             .WithMetrics(metrics => metrics

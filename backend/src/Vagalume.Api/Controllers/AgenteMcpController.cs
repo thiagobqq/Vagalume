@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Vagalume.Application.DTOs;
 using Vagalume.Domain.Abstractions;
@@ -12,7 +13,7 @@ using Vagalume.Infra.Services.Busca.Agentes;
 namespace Vagalume.Api.Controllers;
 
 /// <summary>Servidor MCP sem sessão. Uma credencial autoriza somente as entregas da fonte correspondente.</summary>
-[ApiController, AllowAnonymous]
+[ApiController, AllowAnonymous, EnableRateLimiting("agente")]
 [Route("api/busca/agente/fontes/{fonteId:guid}/mcp")]
 public class AgenteMcpController(AppDbContext db, ICriptografiaService cripto, RetornoAgenteService retornos) : ControllerBase
 {
@@ -25,8 +26,10 @@ public class AgenteMcpController(AppDbContext db, ICriptografiaService cripto, R
             "vagas":{"type":"array","maxItems":25,"items":{
               "type":"object","required":["titulo","url"],"properties":{
                 "titulo":{"type":"string"},"url":{"type":"string","format":"uri"},"empresa":{"type":"string"},
-                "localizacao":{"type":"string"},"descricao":{"type":"string"},"modalidade":{"type":"string"},
-                "nivel":{"type":"string"},"publicadaEm":{"type":"string","format":"date-time"}
+                "localizacao":{"type":"string"},"descricao":{"type":"string"},
+                "modalidade":{"type":"string","enum":["Remoto","Hibrido","Presencial","NaoInformado"]},
+                "nivel":{"type":"string","enum":["Junior","Pleno","Senior","NaoInformado"]},
+                "publicadaEm":{"type":"string","format":"date-time"}
               }}},
             "erro":{"type":"string","maxLength":500}
           },

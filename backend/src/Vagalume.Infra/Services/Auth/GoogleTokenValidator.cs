@@ -28,7 +28,9 @@ public class GoogleTokenValidator : IGoogleTokenValidator
 
         var nome = string.IsNullOrWhiteSpace(payload.Name)
             ? payload.Email.Split('@')[0]
-            : payload.Name;
+            : payload.Name.Trim();
+        if (nome.Length > 150)
+            nome = nome[..150];
 
         return new GoogleUserInfo(payload.Subject, payload.Email, payload.EmailVerified, nome);
     }

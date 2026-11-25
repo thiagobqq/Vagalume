@@ -2,12 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Vagalume.Domain.Abstractions;
 using Vagalume.Domain.Entities;
 using Vagalume.Infra.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace Vagalume.Infra.Services;
 
@@ -16,6 +16,8 @@ public interface ITokenService
     string GenerateAccessToken(AppUser user);
     Task<RefreshToken> CreateRefreshTokenAsync(Guid usuarioId);
     Task<RefreshToken?> ValidateAndRotateAsync(string refreshToken);
+    Task RevokeAsync(string refreshToken);
+    Task RevokeAllAsync(Guid usuarioId);
 }
 
 public class TokenService : ITokenService
@@ -31,13 +33,19 @@ public class TokenService : ITokenService
         _clock = clock;
     }
 
+    public static string CalcularHash(string rawToken)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
+        return Convert.ToBase64String(bytes);
+    }
+
     public string GenerateAccessToken(AppUser user)
     {
         var jwtSection = _config.GetSection("Jwt");
         var key = jwtSection["Key"] ?? throw new InvalidOperationException("Jwt:Key não configurado");
         var issuer = jwtSection["Issuer"] ?? "vagalume";
         var audience = jwtSection["Audience"] ?? "vagalume";
-        var expiresMinutes = int.TryParse(jwtSection["AccessTokenExpiresMinutes"], out var m) ? m : 15;
+        var expiresMinutes = int.TryParse(jwtSection["AccessTokenExpiresMinutes"], out var m) ? m : 60;
 
         var claims = new List<Claim>
         {
@@ -64,52 +72,144 @@ public class TokenService : ITokenService
 
     public async Task<RefreshToken> CreateRefreshTokenAsync(Guid usuarioId)
     {
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        var hash = CalcularHash(rawToken);
         var expiresDays = int.TryParse(_config["Jwt:RefreshTokenExpiresDays"], out var d) ? d : 7;
+        var agora = _clock.UtcNow;
 
         var entity = new RefreshToken
         {
             Id = Guid.NewGuid(),
             UsuarioId = usuarioId,
-            Token = token,
-            CriadoEm = _clock.UtcNow,
-            ExpiraEm = _clock.UtcNow.AddDays(expiresDays)
+            Token = hash,
+            TokenHash = hash,
+            CriadoEm = agora,
+            ExpiraEm = agora.AddDays(expiresDays)
         };
 
         _db.RefreshTokens.Add(entity);
         await _db.SaveChangesAsync();
-        return entity;
+
+        // Retorna cópia desanexada contendo o valor em claro apenas para envio ao cliente
+        return new RefreshToken
+        {
+            Id = entity.Id,
+            UsuarioId = entity.UsuarioId,
+            Token = rawToken,
+            TokenHash = hash,
+            CriadoEm = entity.CriadoEm,
+            ExpiraEm = entity.ExpiraEm
+        };
     }
 
     public async Task<RefreshToken?> ValidateAndRotateAsync(string refreshToken)
     {
-        var stored = await _db.RefreshTokens
-            .FirstOrDefaultAsync(x => x.Token == refreshToken);
-
-        if (stored is null || stored.RevogadoEm != null || stored.ExpiraEm <= _clock.UtcNow)
+        if (string.IsNullOrWhiteSpace(refreshToken))
             return null;
 
-        // revoga antigo
-        stored.RevogadoEm = _clock.UtcNow;
+        var hash = CalcularHash(refreshToken);
+        var agora = _clock.UtcNow;
+        var isRelational = _db.Database.IsRelational();
 
-        // cria novo
-        var newTokenValue = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        await using var tx = isRelational ? await _db.Database.BeginTransactionAsync() : null;
+
+        RefreshToken? stored;
+        if (isRelational)
+        {
+            stored = await _db.RefreshTokens
+                .FromSqlInterpolated(
+                    $"""SELECT * FROM "RefreshTokens" WHERE "TokenHash" = {hash} OR "Token" = {refreshToken} FOR UPDATE""")
+                .FirstOrDefaultAsync();
+        }
+        else
+        {
+            stored = await _db.RefreshTokens
+                .FirstOrDefaultAsync(x => x.TokenHash == hash || x.Token == refreshToken);
+        }
+
+        if (stored is null)
+            return null;
+
+        // Detecção de reuso: token já rotacionado sendo reapresentado -> revoga toda a família de sessões ativas
+        if (stored.RevogadoEm != null)
+        {
+            if (!string.IsNullOrEmpty(stored.SubstituidoPorToken))
+            {
+                await RevogarTodosAtivosInternoAsync(stored.UsuarioId, agora);
+                await _db.SaveChangesAsync();
+                if (tx is not null) await tx.CommitAsync();
+            }
+            return null;
+        }
+
+        if (stored.ExpiraEm <= agora)
+            return null;
+
+        var newRawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        var newHash = CalcularHash(newRawToken);
         var expiresDays = int.TryParse(_config["Jwt:RefreshTokenExpiresDays"], out var d) ? d : 7;
+
+        stored.RevogadoEm = agora;
+        stored.TokenHash ??= hash;
+        stored.Token = stored.TokenHash;
+        stored.SubstituidoPorToken = newHash;
 
         var novo = new RefreshToken
         {
             Id = Guid.NewGuid(),
             UsuarioId = stored.UsuarioId,
-            Token = newTokenValue,
-            CriadoEm = _clock.UtcNow,
-            ExpiraEm = _clock.UtcNow.AddDays(expiresDays)
+            Token = newHash,
+            TokenHash = newHash,
+            CriadoEm = agora,
+            ExpiraEm = agora.AddDays(expiresDays)
         };
-
-        stored.SubstituidoPorToken = newTokenValue;
 
         _db.RefreshTokens.Add(novo);
         await _db.SaveChangesAsync();
+        if (tx is not null) await tx.CommitAsync();
 
-        return novo;
+        return new RefreshToken
+        {
+            Id = novo.Id,
+            UsuarioId = novo.UsuarioId,
+            Token = newRawToken,
+            TokenHash = newHash,
+            CriadoEm = novo.CriadoEm,
+            ExpiraEm = novo.ExpiraEm
+        };
+    }
+
+    public async Task RevokeAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return;
+
+        var hash = CalcularHash(refreshToken);
+        var stored = await _db.RefreshTokens
+            .FirstOrDefaultAsync(x => x.TokenHash == hash || x.Token == refreshToken);
+
+        if (stored is null || stored.RevogadoEm != null)
+            return;
+
+        stored.RevogadoEm = _clock.UtcNow;
+        stored.TokenHash ??= hash;
+        stored.Token = stored.TokenHash;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task RevokeAllAsync(Guid usuarioId)
+    {
+        await RevogarTodosAtivosInternoAsync(usuarioId, _clock.UtcNow);
+        await _db.SaveChangesAsync();
+    }
+
+    private async Task RevogarTodosAtivosInternoAsync(Guid usuarioId, DateTime agora)
+    {
+        var ativos = await _db.RefreshTokens
+            .Where(x => x.UsuarioId == usuarioId && x.RevogadoEm == null)
+            .ToListAsync();
+
+        foreach (var item in ativos)
+            item.RevogadoEm = agora;
     }
 }
