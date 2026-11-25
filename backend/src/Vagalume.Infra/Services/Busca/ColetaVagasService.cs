@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,7 @@ using Vagalume.Domain.Busca;
 using Vagalume.Domain.Entities;
 using Vagalume.Domain.Enums;
 using Vagalume.Infra.Data;
+using Vagalume.Infra.Observability;
 using Vagalume.Infra.Services.Busca.Fontes;
 using Vagalume.Infra.Services.Busca.Agentes;
 
@@ -55,6 +57,10 @@ public class ColetaVagasService : IBuscaVagasService
 
     public async Task<ExecucaoBusca> ExecutarAsync(Guid usuarioId, Guid execucaoId, CancellationToken ct = default)
     {
+        using var execActivity = VagalumeTelemetry.ActivitySource.StartActivity("busca.executar");
+        execActivity?.SetTag("vagalume.usuario.id", usuarioId.ToString());
+        execActivity?.SetTag("vagalume.execucao.id", execucaoId.ToString());
+
         var execucao = await _db.ExecucoesBusca
             .FirstOrDefaultAsync(e => e.Id == execucaoId && e.UsuarioId == usuarioId, ct);
 
@@ -115,18 +121,39 @@ public class ColetaVagasService : IBuscaVagasService
             var lotes = new List<LoteLocal>();
             foreach (var fonte in locais)
             {
+                var fonteTag = fonte.Tipo.ToString().ToLowerInvariant();
+                using var fonteActivity = VagalumeTelemetry.ActivitySource.StartActivity("busca.fonte");
+                fonteActivity?.SetTag("vagalume.fonte.tipo", fonteTag);
+                fonteActivity?.SetTag("vagalume.fonte.id", fonte.Id.ToString());
+                var inicio = Stopwatch.GetTimestamp();
+                var resultado = "sucesso";
+
                 try
                 {
                     using var fonteCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     fonteCts.CancelAfter(_timeoutFonte);
                     var vagas = await _factory.Obter(fonte.Tipo).BuscarAsync(fonte, perfil, fonteCts.Token);
+                    fonteActivity?.SetTag("vagalume.vagas.coletadas", vagas.Count);
                     lotes.Add(new(fonte, vagas, null));
                 }
                 catch (Exception ex)
                 {
+                    resultado = ex is OperationCanceledException ? "timeout" : "erro";
+                    fonteActivity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                     var erro = ex is OperationCanceledException ? "Coleta cancelada ou fora do prazo" : Truncar(ex.Message, 1000);
                     lotes.Add(new(fonte, [], erro));
                     _logger.LogWarning(ex, "Falha ao coletar a fonte {Fonte} do usuário {UsuarioId}", fonte.Id, usuarioId);
+                }
+                finally
+                {
+                    var duracaoMs = Stopwatch.GetElapsedTime(inicio).TotalMilliseconds;
+                    var tags = new TagList
+                    {
+                        { "fonte", fonteTag },
+                        { "resultado", resultado }
+                    };
+                    VagalumeTelemetry.ScrapingExecucoes.Add(1, tags);
+                    VagalumeTelemetry.ScrapingDuracaoMs.Record(duracaoMs, tags);
                 }
             }
 
@@ -145,7 +172,16 @@ public class ColetaVagasService : IBuscaVagasService
                 detalhe.Erro = lote.Erro;
                 detalhe.Sucesso = lote.Erro is null;
                 if (detalhe.Sucesso)
-                    novas.AddRange(_importador.Adicionar(lote.Vagas, lote.Fonte, perfil, execucao, detalhe, indice, _scraping.MaxItens));
+                {
+                    var importadas = _importador.Adicionar(lote.Vagas, lote.Fonte, perfil, execucao, detalhe, indice, _scraping.MaxItens);
+                    if (importadas.Count > 0)
+                    {
+                        VagalumeTelemetry.VagasImportadas.Add(
+                            importadas.Count,
+                            new KeyValuePair<string, object?>("fonte", lote.Fonte.Tipo.ToString().ToLowerInvariant()));
+                    }
+                    novas.AddRange(importadas);
+                }
             }
             _db.Entry(execucao).Property(e => e.DetalhesPorFonte).IsModified = true;
             execucao.FinalizarSeConcluida(_clock.UtcNow);

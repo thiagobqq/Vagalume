@@ -4,6 +4,7 @@ using Vagalume.Domain.Authorization;
 using Vagalume.Domain.Entities;
 using Vagalume.Domain.Enums;
 using Vagalume.Infra.Data;
+using Vagalume.Infra.Observability;
 
 namespace Vagalume.Api.BackgroundServices;
 
@@ -77,6 +78,7 @@ public class BuscaEnfileirador
             execucao.Erro = "Fila cheia";
             execucao.FinalizadaEm = _clock.UtcNow;
             await _db.SaveChangesAsync(ct);
+            VagalumeTelemetry.FilaDescartes.Add(1);
             _logger.LogWarning("Fila de busca cheia; descartando execução do usuário {UsuarioId}", usuarioId);
             return new ResultadoEnfileiramento(StatusEnfileiramento.FilaCheia, execucao);
         }

@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Vagalume.Api.Authorization;
 using Vagalume.Api.BackgroundServices;
+using Vagalume.Api.Observability;
 using Vagalume.Application.Common;
 using Vagalume.Domain.Abstractions;
 using Vagalume.Domain.Authorization;
@@ -28,6 +29,7 @@ using Vagalume.Infra.Services.Seguranca;
 Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddVagalumeObservability();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("ConnectionStrings:DefaultConnection não configurada (defina ConnectionStrings__DefaultConnection).");
@@ -332,9 +334,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseExceptionHandler();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapVagalumeHealthChecks();
 app.MapControllers();
 
 app.Run();

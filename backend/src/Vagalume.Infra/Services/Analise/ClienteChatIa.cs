@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Vagalume.Domain.Analise;
+using Vagalume.Infra.Observability;
 
 namespace Vagalume.Infra.Services.Analise;
 
@@ -27,6 +29,12 @@ public class ClienteChatIa
         CancellationToken ct,
         int? maxTokens = null)
     {
+        using var activity = VagalumeTelemetry.ActivitySource.StartActivity("ia.chat.completions");
+        activity?.SetTag("vagalume.ia.modelo", provedor.Modelo);
+        activity?.SetTag("vagalume.ia.json_mode", jsonMode);
+        var inicio = Stopwatch.GetTimestamp();
+        var resultado = "sucesso";
+
         var client = _factory.CreateClient(ClientName);
         var url = $"{provedor.BaseUrl.TrimEnd('/')}/chat/completions";
 
@@ -53,51 +61,80 @@ public class ClienteChatIa
         if (!string.IsNullOrWhiteSpace(provedor.ApiKey))
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", provedor.ApiKey);
 
-        HttpResponseMessage response;
         try
         {
-            response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-        }
-        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
-        {
-            throw new AnalisadorIaException("O provedor de IA excedeu o tempo limite.");
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new AnalisadorIaException($"Falha ao contatar o provedor de IA: {ex.Message}");
-        }
-
-        using (response)
-        {
-            var body = await response.Content.ReadAsStringAsync(ct);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var detalhe = ExtrairErro(body);
-                var mensagem = (int)response.StatusCode is 401 or 403
-                    ? "Chave de IA inválida ou sem permissão no provedor."
-                    : $"Provedor de IA retornou erro {(int)response.StatusCode}. {detalhe}".Trim();
-                throw new AnalisadorIaException(mensagem, (int)response.StatusCode);
-            }
-
+            HttpResponseMessage response;
             try
             {
-                using var doc = JsonDocument.Parse(body);
-                var content = doc.RootElement
-                    .GetProperty("choices")[0]
-                    .GetProperty("message")
-                    .GetProperty("content")
-                    .GetString();
-
-                if (string.IsNullOrWhiteSpace(content))
-                    throw new AnalisadorIaException("O provedor de IA retornou uma resposta vazia.");
-
-                return content;
+                response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             }
-            catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
+            catch (TaskCanceledException) when (!ct.IsCancellationRequested)
             {
-                throw new AnalisadorIaException("Não foi possível interpretar a resposta do provedor de IA.");
+                resultado = "timeout";
+                throw new AnalisadorIaException("O provedor de IA excedeu o tempo limite.");
             }
+            catch (HttpRequestException ex)
+            {
+                resultado = "erro";
+                throw new AnalisadorIaException($"Falha ao contatar o provedor de IA: {ex.Message}");
+            }
+
+            using (response)
+            {
+                activity?.SetTag("http.response.status_code", (int)response.StatusCode);
+                var body = await response.Content.ReadAsStringAsync(ct);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    resultado = "erro";
+                    var detalhe = ExtrairErro(body);
+                    var mensagem = (int)response.StatusCode is 401 or 403
+                        ? "Chave de IA inválida ou sem permissão no provedor."
+                        : $"Provedor de IA retornou erro {(int)response.StatusCode}. {detalhe}".Trim();
+                    throw new AnalisadorIaException(mensagem, (int)response.StatusCode);
+                }
+
+                try
+                {
+                    using var doc = JsonDocument.Parse(body);
+                    var content = doc.RootElement
+                        .GetProperty("choices")[0]
+                        .GetProperty("message")
+                        .GetProperty("content")
+                        .GetString();
+
+                    if (string.IsNullOrWhiteSpace(content))
+                    {
+                        resultado = "erro";
+                        throw new AnalisadorIaException("O provedor de IA retornou uma resposta vazia.");
+                    }
+
+                    return content;
+                }
+                catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
+                {
+                    resultado = "erro";
+                    throw new AnalisadorIaException("Não foi possível interpretar a resposta do provedor de IA.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            if (resultado == "sucesso")
+                resultado = "erro";
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            throw;
+        }
+        finally
+        {
+            var duracaoMs = Stopwatch.GetElapsedTime(inicio).TotalMilliseconds;
+            var tags = new TagList
+            {
+                { "modelo", provedor.Modelo },
+                { "resultado", resultado }
+            };
+            VagalumeTelemetry.IaChamadas.Add(1, tags);
+            VagalumeTelemetry.IaDuracaoMs.Record(duracaoMs, tags);
         }
     }
 
