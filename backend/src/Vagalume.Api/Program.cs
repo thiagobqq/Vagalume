@@ -1,9 +1,12 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -52,8 +55,11 @@ if (!builder.Environment.IsDevelopment())
         throw new InvalidOperationException("Jwt:Key fraca/placeholder em produção. Defina Jwt__Key com um segredo forte.");
 
     var chaveCripto = builder.Configuration["Seguranca:ChaveCripto"];
-    if (string.IsNullOrWhiteSpace(chaveCripto) || chaveCripto == "troque-este-segredo-em-producao")
-        throw new InvalidOperationException("Seguranca:ChaveCripto ausente/placeholder em produção. Defina Seguranca__ChaveCripto.");
+    if (string.IsNullOrWhiteSpace(chaveCripto)
+        || chaveCripto.Length < 32
+        || chaveCripto == "troque-este-segredo-em-producao"
+        || chaveCripto.Contains("nao-use-em-producao", StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException("Seguranca:ChaveCripto ausente, curta (<32 chars) ou placeholder em produção. Defina Seguranca__ChaveCripto com um segredo forte.");
 }
 
 
@@ -134,7 +140,18 @@ builder.Services.AddHttpClient(BuscaHttp.ClientName, client =>
 {
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(buscaTimeout, 5, 120));
     client.DefaultRequestHeaders.UserAgent.ParseAdd(buscaUserAgent);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    AutomaticDecompression = System.Net.DecompressionMethods.All
 });
+
+builder.Services.AddHttpClient(BuscaHttp.PublicSafeClientName, client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(buscaTimeout, 5, 60));
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(buscaUserAgent);
+})
+.ConfigurePrimaryHttpMessageHandler(() => SafePublicHttpHandler.CriarHandler(allowAutoRedirect: false));
 
 builder.Services.AddHttpClient(WebhookAgente.Cliente, c => c.Timeout = TimeSpan.FromSeconds(10))
     .RemoveAllLoggers()
@@ -165,6 +182,8 @@ builder.Services.AddScoped<IExtratorTextoPdf, ExtratorTextoPdfPdfPig>();
 builder.Services.AddScoped<ClienteChatIa>();
 builder.Services.AddScoped<IAnalisadorCompatibilidade, AnalisadorCompatibilidadeIa>();
 builder.Services.AddScoped<IAnalisadorAts, AnalisadorAtsIa>();
+builder.Services.AddScoped<IAssistenteCandidaturaIa, AssistenteCandidaturaIa>();
+builder.Services.AddScoped<IExtratorVagaPorLink, ExtratorVagaPorLinkService>();
 
 var iaTimeout = builder.Configuration.GetValue("Ia:TimeoutSegundos", 50);
 builder.Services.AddHttpClient(ClienteChatIa.ClientName, client =>
@@ -201,11 +220,12 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Vagalume API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header usando Bearer. Ex: 'Bearer {token}'",
+        Description = "Token JWT (cole apenas o token, sem o prefixo Bearer)",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -219,9 +239,60 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(opts =>
+{
+    opts.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    opts.KnownIPNetworks.Clear();
+    opts.KnownProxies.Clear();
+});
+
+builder.Services.AddRateLimiter(opts =>
+{
+    opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    opts.OnRejected = async (ctx, ct) =>
+    {
+        ctx.HttpContext.Response.ContentType = "application/json";
+        var envelope = GenericResponseData<object>.Fail("Muitas requisições. Aguarde alguns instantes e tente novamente.");
+        await ctx.HttpContext.Response.WriteAsJsonAsync(envelope, ct);
+    };
+    opts.AddPolicy("auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anon",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 30,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
+    opts.AddPolicy("ia", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "ia",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
+    opts.AddPolicy("agente", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "agente",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
+});
+
+var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"]?
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 builder.Services.AddCors(opts =>
 {
-    opts.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    opts.AddDefaultPolicy(p =>
+    {
+        if (builder.Environment.IsDevelopment() || allowedOrigins is null || allowedOrigins.Length == 0)
+            p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        else
+            p.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+    });
 });
 
 var app = builder.Build();
@@ -334,8 +405,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapVagalumeHealthChecks();

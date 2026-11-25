@@ -13,6 +13,12 @@ public static class CandidaturaMapping
         Link = c.Link,
         Origem = c.Origem.ToString(),
         Observacoes = c.Observacoes,
+        DescricaoVaga = c.DescricaoVaga,
+        Modalidade = c.Modalidade?.ToString(),
+        CurriculoId = c.CurriculoId,
+        FaixaSalarial = c.FaixaSalarial,
+        ProximaEtapaEm = c.ProximaEtapaEm,
+        MotivoEncerramento = c.MotivoEncerramento,
         Status = c.Status.ToString(),
         CriadoEm = c.CriadoEm,
         AtualizadoEm = c.AtualizadoEm
@@ -26,6 +32,12 @@ public static class CandidaturaMapping
         Link = c.Link,
         Origem = c.Origem.ToString(),
         Observacoes = c.Observacoes,
+        DescricaoVaga = c.DescricaoVaga,
+        Modalidade = c.Modalidade?.ToString(),
+        CurriculoId = c.CurriculoId,
+        FaixaSalarial = c.FaixaSalarial,
+        ProximaEtapaEm = c.ProximaEtapaEm,
+        MotivoEncerramento = c.MotivoEncerramento,
         Status = c.Status.ToString(),
         CriadoEm = c.CriadoEm,
         AtualizadoEm = c.AtualizadoEm,
@@ -45,8 +57,10 @@ public static class CandidaturaMapping
     {
         Id = c.Id,
         NomeArquivoOriginal = c.NomeArquivoOriginal,
+        Rotulo = c.Rotulo,
         TamanhoBytes = c.TamanhoBytes,
         Ativo = c.Ativo,
+        TextoLegivel = c.TextoLegivel,
         CriadoEm = c.CriadoEm
     };
 }
