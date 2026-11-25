@@ -51,6 +51,12 @@ public class BuscaQueueHostedService : BackgroundService
 
     private async Task ExecutarItemAsync(ItemBusca item, SemaphoreSlim semaforo, CancellationToken stoppingToken)
     {
+        using var logScope = _logger.BeginScope(new Dictionary<string, object>
+        {
+            ["UsuarioId"] = item.UsuarioId,
+            ["ExecucaoId"] = item.ExecucaoId
+        });
+
         try
         {
             using var scope = _scopeFactory.CreateScope();

@@ -33,6 +33,10 @@ services:
       Ia__Presets__OllamaBaseUrl: "${IA_PRESETS_OLLAMA_BASE_URL:-}"
       Busca__Agente__UrlPublica: "${Busca__Agente__UrlPublica:-}"
       Uploads__BasePath: "/app/uploads"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
+      OTEL_EXPORTER_OTLP_HEADERS: "${OTEL_EXPORTER_OTLP_HEADERS:-}"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}"
+      OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-vagalume-api}"
     volumes:
       - uploads_data:/app/uploads
     depends_on:
