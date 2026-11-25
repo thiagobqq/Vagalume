@@ -32,6 +32,7 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
+              <Route path="metricas" element={<Navigate to="/app?aba=dashboard" replace />} />
               <Route
                 path="curriculos"
                 element={

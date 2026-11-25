@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ExternalLink, Pencil } from "lucide-react"
+import { Loader2, ExternalLink, Pencil, ArrowRight } from "lucide-react"
 import type { CandidaturaDetalhadaDto, Origem, Status } from "./types"
 import { ORIGEM_VALUES, STATUS_LABEL, STATUS_ORDER } from "./types"
 import { STATUS_STYLE } from "./status-style"
@@ -117,7 +117,8 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated, onS
     setErr(null)
     try {
       await onStatusChange(next)
-      setData((d) => (d ? { ...d, status: next } : d))
+      const atualizada = await obterCandidatura(id)
+      setData(atualizada)
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -127,16 +128,15 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated, onS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-[640px]">
+      <DialogContent
+        className="max-h-[90vh] overflow-auto sm:max-w-[640px]"
+        {...(!data || editing ? { "aria-describedby": undefined } : {})}
+      >
         <DialogHeader className="min-w-0">
           <DialogTitle className="break-words">{data ? (editing ? "Editar candidatura" : data.cargo) : "Detalhe da candidatura"}</DialogTitle>
-          <DialogDescription className="break-words text-xs">
-            {data
-              ? editing
-                ? "Atualize os campos e salve."
-                : data.empresa
-              : "Carregando..."}
-          </DialogDescription>
+          {data && !editing && (
+            <DialogDescription className="break-words text-xs">{data.empresa}</DialogDescription>
+          )}
         </DialogHeader>
 
         {loading ? (
@@ -256,6 +256,51 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated, onS
                   <p className="text-sm text-muted-foreground">sem observações</p>
                 )}
               </div>
+
+              {data.eventos && data.eventos.length > 0 && (
+                <div className="min-w-0 space-y-2">
+                  <div className="text-xs font-medium text-muted-foreground">Histórico de transições</div>
+                  <ol className="space-y-1.5 rounded-lg border bg-muted/20 p-3">
+                    {data.eventos.map((ev) => {
+                      const novoStyle = STATUS_STYLE[(ev.statusNovo as Status) || "Aplicado"]
+                      const antStyle = ev.statusAnterior ? STATUS_STYLE[ev.statusAnterior as Status] : null
+                      return (
+                        <li key={ev.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <div className="flex flex-wrap items-center gap-1.5 font-medium">
+                            {ev.statusAnterior ? (
+                              <>
+                                <span className="inline-flex items-center gap-1">
+                                  <span
+                                    className="h-2 w-2 rounded-full"
+                                    style={{ background: antStyle?.dot ?? "var(--muted-foreground)" }}
+                                  />
+                                  {STATUS_LABEL[ev.statusAnterior as Status] ?? ev.statusAnterior}
+                                </span>
+                                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">Criada em</span>
+                            )}
+                            <span className="inline-flex items-center gap-1 font-semibold">
+                              <span
+                                className="h-2 w-2 rounded-full"
+                                style={{ background: novoStyle?.dot ?? "var(--muted-foreground)" }}
+                              />
+                              {STATUS_LABEL[ev.statusNovo as Status] ?? ev.statusNovo}
+                            </span>
+                            {ev.observacao && (
+                              <span className="text-muted-foreground">— {ev.observacao}</span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">
+                            {new Date(ev.criadoEm).toLocaleString("pt-BR")}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ol>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                 <span className="inline-flex items-center rounded-full border bg-muted/40 px-3 py-1">

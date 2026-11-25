@@ -5,6 +5,7 @@ using Vagalume.Api.Extensions;
 using Vagalume.Application.Common;
 using Vagalume.Application.DTOs;
 using Vagalume.Application.Mappings;
+using Vagalume.Application.Metricas;
 using Vagalume.Application.Validators;
 using Vagalume.Domain.Abstractions;
 using Vagalume.Domain.Entities;
@@ -83,6 +84,46 @@ public class CandidaturasController : ControllerBase
 
         var dtos = lista.Select(CandidaturaMapping.ToDto).ToList();
         return Ok(GenericResponseData<List<CandidaturaDto>>.Ok(dtos));
+    }
+
+    [HttpGet("metricas")]
+    [ProducesResponseType(typeof(GenericResponseData<MetricasFunilDto>), 200)]
+    [ProducesResponseType(typeof(GenericResponseData<object>), 400)]
+    public async Task<IActionResult> Metricas([FromQuery] DateTime? de, [FromQuery] DateTime? ate, [FromQuery] string? origem)
+    {
+        var usuarioId = User.GetUserId();
+
+        var query = _db.Candidaturas
+            .AsNoTracking()
+            .Include(c => c.Eventos)
+            .Where(c => c.UsuarioId == usuarioId);
+
+        if (!string.IsNullOrWhiteSpace(origem))
+        {
+            if (!EnumValidator.TryParseOrigem(origem, out var origemEnum))
+                return BadRequest(GenericResponseData<object>.Fail($"Origem inválida. Valores permitidos: {EnumValidator.OrigemValores}"));
+            query = query.Where(c => c.Origem == origemEnum);
+        }
+
+        if (de.HasValue)
+        {
+            var inicioUtc = de.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(de.Value, DateTimeKind.Utc)
+                : de.Value.ToUniversalTime();
+            query = query.Where(c => c.CriadoEm >= inicioUtc);
+        }
+
+        if (ate.HasValue)
+        {
+            var fimUtc = ate.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(ate.Value, DateTimeKind.Utc)
+                : ate.Value.ToUniversalTime();
+            query = query.Where(c => c.CriadoEm <= fimUtc);
+        }
+
+        var candidaturas = await query.ToListAsync();
+        var metricas = CalculadoraMetricasFunil.Calcular(candidaturas);
+        return Ok(GenericResponseData<MetricasFunilDto>.Ok(metricas));
     }
 
     [HttpGet("{id:guid}")]

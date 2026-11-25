@@ -40,9 +40,8 @@ export function Login() {
 
         <Panel notebook tape className="p-6 sm:p-7">
           <h1 className="text-base font-semibold tracking-tight">entrar no seu caderno</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Use e-mail e senha cadastrados.</p>
 
-          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <div className="space-y-2">
               <Label htmlFor="email">e-mail</Label>
               <Input

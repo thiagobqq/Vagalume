@@ -56,10 +56,7 @@ export function KanbanColumn({
         <div className="relative z-20 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
           {apps.length === 0 ? (
             <div className="grid flex-1 place-items-center rounded-xl border-[1.5px] border-dashed border-ink/25 bg-card/50 px-4 py-8 text-center">
-              <div>
-                <p className="text-sm font-bold text-foreground/60">vazio</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">arraste um card para cá</p>
-              </div>
+              <p className="text-sm font-bold text-foreground/60">vazio</p>
             </div>
           ) : (
             apps.map((a) => <ApplicationCard key={a.id} app={a} onOpenDetail={onOpenDetail} />)

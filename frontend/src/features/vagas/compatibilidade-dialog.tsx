@@ -153,7 +153,7 @@ export function CompatibilidadeDialog({
         ) : (
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              Ainda não há análise para esta vaga. Vamos comparar seu currículo ativo com os requisitos da vaga.
+              Nenhuma análise gerada ainda.
             </p>
             <Button className="gap-1.5" onClick={() => void gerar()}>
               <Wand2 className="h-4 w-4" /> analisar compatibilidade
