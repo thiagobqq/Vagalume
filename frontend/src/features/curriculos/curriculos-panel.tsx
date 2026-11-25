@@ -60,7 +60,6 @@ export function CurriculosPanel() {
   return (
     <NotebookPanel
       title="Seus currículos"
-      description="PDF até 10 MB. Um fica ativo por vez."
       badge={
         items.length > 0 ? (
           <Badge variant="outline" className="tabular-nums">
@@ -101,7 +100,6 @@ export function CurriculosPanel() {
           <div className="rounded-lg border border-dashed border-ink/25 px-4 py-10 text-center">
             <FileText className="mx-auto h-6 w-6 text-muted-foreground" />
             <p className="mt-2 text-sm font-medium">nenhum currículo ainda</p>
-            <p className="text-xs text-muted-foreground">envie seu PDF para usar depois nas candidaturas</p>
           </div>
         ) : (
           <div className="space-y-2">

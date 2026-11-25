@@ -235,18 +235,11 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
             <div className="grid h-12 w-12 place-items-center rounded-xl border-[1.5px] border-ink bg-primary/20 shadow-hard-xs">
               <GitBranch className="h-6 w-6" />
             </div>
-            <div className="space-y-1">
-              <h2 className="text-base font-extrabold tracking-tight">
-                {periodo !== "all" || origem !== "all"
-                  ? "Nenhuma candidatura encontrada para esse filtro"
-                  : "Seu funil ainda está em branco"}
-              </h2>
-              <p className="max-w-md text-sm text-muted-foreground">
-                {periodo !== "all" || origem !== "all"
-                  ? "Experimente ampliar o período ou remover o filtro de origem para ver o histórico completo."
-                  : "Cadastre suas candidaturas e mova os cards entre as etapas no Quadro para acompanhar o fluxo das suas vagas."}
-              </p>
-            </div>
+            <h2 className="text-base font-extrabold tracking-tight">
+              {periodo !== "all" || origem !== "all"
+                ? "Nenhuma candidatura encontrada para esse filtro"
+                : "Seu funil ainda está em branco"}
+            </h2>
             <div className="flex flex-wrap justify-center gap-2">
               {periodo !== "all" || origem !== "all" ? (
                 <Button
@@ -291,9 +284,6 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
                 <span className="text-xs font-bold" style={{ color: "var(--st-closed)" }}>
                   {formatPct(taxaDiretasEncerradas)}
                 </span>
-              </div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                Aplicado → Encerrado sem triagem
               </div>
             </NotebookCard>
 
@@ -350,7 +340,6 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
           {/* Diagrama de Sankey */}
           <NotebookPanel
             title="Fluxo de transição das vagas"
-            description="Distribuição proporcional do caminho percorrido pelas suas candidaturas desde Aplicado até o desfecho."
             headerColor="var(--primary)"
             holes
             ruled
@@ -434,7 +423,6 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <NotebookPanel
               title="Histórico de transições"
-              description="Todas as mudanças de status registradas, incluindo tempo médio e eventuais retornos."
               headerColor="var(--st-triage)"
               badge={
                 data.totalRetornos > 0 ? (
@@ -447,7 +435,7 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
             >
               {data.transicoes.length === 0 ? (
                 <div className="py-8 text-center text-xs text-muted-foreground">
-                  Ainda não há mudanças de status registradas — todas as candidaturas continuam em Aplicado.
+                  Nenhuma transição registrada ainda.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -513,7 +501,6 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
 
             <NotebookPanel
               title="Desempenho por origem"
-              description="Compare quais canais geram mais avanço e quais concentram encerramentos diretos."
               headerColor="var(--st-offer)"
             >
               <div className="space-y-3">

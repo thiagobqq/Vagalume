@@ -72,10 +72,7 @@ export function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Permissões"
-        description="Conceda ou revogue o acesso de cada usuário aos módulos do sistema."
-      />
+      <PageHeader title="Permissões" />
 
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

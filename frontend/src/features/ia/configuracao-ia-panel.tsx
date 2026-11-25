@@ -137,7 +137,6 @@ export function ConfiguracaoIaPanel() {
             <KeyRound className="h-4 w-4" /> Provedor de IA
           </span>
         }
-        description="Use sua própria chave. Ela é armazenada cifrada e nunca é exibida de volta."
         badge={
           <Badge variant={config?.temChave || provedorAtual?.requerChave === false ? "offer" : "outline"}>
             {config ? (config.temChave ? "configurado" : "sem chave") : "não configurado"}

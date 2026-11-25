@@ -128,16 +128,15 @@ export function CandidaturaDetailDialog({ id, open, onOpenChange, onUpdated, onS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-[640px]">
+      <DialogContent
+        className="max-h-[90vh] overflow-auto sm:max-w-[640px]"
+        {...(!data || editing ? { "aria-describedby": undefined } : {})}
+      >
         <DialogHeader className="min-w-0">
           <DialogTitle className="break-words">{data ? (editing ? "Editar candidatura" : data.cargo) : "Detalhe da candidatura"}</DialogTitle>
-          <DialogDescription className="break-words text-xs">
-            {data
-              ? editing
-                ? "Atualize os campos e salve."
-                : data.empresa
-              : "Carregando..."}
-          </DialogDescription>
+          {data && !editing && (
+            <DialogDescription className="break-words text-xs">{data.empresa}</DialogDescription>
+          )}
         </DialogHeader>
 
         {loading ? (

@@ -16,10 +16,7 @@ export function CurriculosPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Currículos"
-        description="Envie PDFs e escolha qual fica ativo nas suas candidaturas."
-      />
+      <PageHeader title="Currículos" />
       <Tabs
         value={aba}
         onValueChange={(valor) => {

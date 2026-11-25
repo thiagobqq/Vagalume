@@ -94,17 +94,6 @@ export const FONTE_LABEL: Record<string, string> = {
   Rss: "RSS",
 }
 
-export const FONTE_HINT: Record<string, string> = {
-  Agente: "O workflow recebe os critérios do perfil e envia as vagas ao Vagalume pelo endereço de retorno.",
-  Gupy: "Busca em todo o portal pelas suas palavras-chave. Opcional: informe o slug da empresa (ex.: daycoval-tech) para restringir.",
-  Trampos: "Busca por palavra-chave nas oportunidades do Trampos (TI, comunicação e design).",
-  Programathor: "Portal de vagas de tecnologia; busca por palavra-chave.",
-  InfoJobs: "Busca por palavra-chave no portal InfoJobs.",
-  Catho: "Busca por palavra-chave no portal Catho.",
-  LinkedIn: "Busca pública do LinkedIn, sem login. Opcional: informe a localização (ex.: São Paulo, Brasil); vazio = Brasil.",
-  Rss: "Informe a URL do feed RSS/Atom da empresa ou portal.",
-}
-
 export const NIVEIS = ["Junior", "Pleno", "Senior"] as const
 export const MODALIDADES = ["Remoto", "Hibrido", "Presencial"] as const
 

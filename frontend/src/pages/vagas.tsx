@@ -19,7 +19,6 @@ import { useAuth } from "@/features/auth/auth-context"
 import { PERMISSOES } from "@/features/auth/permissoes"
 import {
   DIAS_LABEL,
-  FONTE_HINT,
   FONTE_LABEL,
   FONTE_TIPOS,
   MODALIDADE_LABEL,
@@ -292,9 +291,6 @@ function InboxTab() {
           <div className="py-8 text-center">
             <Inbox className="mx-auto h-6 w-6 text-muted-foreground" />
             <p className="mt-2 text-sm font-medium">nenhuma vaga nova</p>
-            <p className="text-xs text-muted-foreground">
-              configure suas fontes e critérios na aba Configuração e clique em "buscar agora".
-            </p>
           </div>
         </NotebookPanel>
       ) : (
@@ -433,10 +429,7 @@ function ConfigTab() {
 
       <Panel className="p-5">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold">Critérios</h3>
-            <p className="text-xs text-muted-foreground">Vagas que não casam são descartadas automaticamente.</p>
-          </div>
+          <h3 className="text-sm font-semibold">Critérios</h3>
           <Button
             variant={form.ativo ? "default" : "outline"}
             size="sm"
@@ -448,15 +441,15 @@ function ConfigTab() {
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="space-y-1 text-xs font-medium">
-            Palavras-chave (separe por vírgula)
+            Palavras-chave
             <Input value={palavras} onChange={(e) => setPalavras(e.target.value)} placeholder="Backend, Full Stack, Júnior" />
           </label>
           <label className="space-y-1 text-xs font-medium">
-            Tecnologias (separe por vírgula)
+            Tecnologias
             <Input value={tecnologias} onChange={(e) => setTecnologias(e.target.value)} placeholder=".NET, C#, React, SQL Server" />
           </label>
           <label className="space-y-1 text-xs font-medium">
-            Excluir (separe por vírgula)
+            Excluir
             <Input value={excluir} onChange={(e) => setExcluir(e.target.value)} placeholder="vendas, estágio" />
           </label>
           <label className="space-y-1 text-xs font-medium">
@@ -682,9 +675,6 @@ function FontesPanel({
   return (
     <Panel className="p-5">
       <h3 className="text-sm font-semibold">Fontes de vagas</h3>
-      <p className="text-xs text-muted-foreground">
-        Escolha as fontes que vão buscar vagas com os critérios do seu perfil.
-      </p>
 
       <div className="mt-4 grid grid-cols-1 items-end gap-3 sm:grid-cols-[170px_1fr_1fr_auto]">
         <div className="space-y-1 text-xs font-medium">
@@ -764,7 +754,6 @@ function FontesPanel({
         <div className="mt-3 space-y-2">
           <fieldset className="space-y-2">
             <legend className="text-xs font-medium">Cabeçalhos de autenticação (opcional)</legend>
-            <p className="text-xs text-muted-foreground">Use os nomes exigidos pelo seu workflow, como api-key, api-secret ou Authorization.</p>
             {cabecalhos.map(c => (
               <div key={c.id} className="flex flex-wrap gap-2">
                 <Input className="min-w-32 flex-1" aria-label="Nome do cabeçalho" placeholder="api-key" maxLength={128}
@@ -811,10 +800,6 @@ function FontesPanel({
             <p className="mt-1">Se nenhuma vaga atender ao perfil, envie <code>{'{"vagas":[]}'}</code>.</p></>}
           </details>
         </div>
-      )}
-
-      {FONTE_HINT[tipo] && (
-        <p className="mt-2 text-[11px] text-muted-foreground">{FONTE_HINT[tipo]}</p>
       )}
 
       {erro && <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{erro}</div>}
@@ -876,10 +861,7 @@ function FontesPanel({
 export function VagasPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Busca de vagas"
-        description="O sistema procura vagas periodicamente nas suas fontes e mostra só as que passam nos seus critérios."
-      />
+      <PageHeader title="Busca de vagas" />
       <Tabs defaultValue="inbox">
         <TabsList>
           <TabsTrigger value="inbox">Novas vagas</TabsTrigger>

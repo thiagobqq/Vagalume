@@ -218,7 +218,7 @@ export function AnaliseAtsDialog({
         ) : (
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              Vamos avaliar o quão bem este currículo é lido e ranqueado por um ATS brasileiro.
+              Nenhuma análise gerada ainda.
             </p>
             <Button className="gap-1.5" onClick={() => void gerar()}>
               <Wand2 className="h-4 w-4" /> analisar currículo

@@ -45,9 +45,8 @@ export function Register() {
 
         <Panel notebook tape className="p-6 sm:p-7">
           <h1 className="text-base font-semibold tracking-tight">criar sua conta</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Leva 10 segundos. Depois você já anota vagas.</p>
 
-          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
             <div className="space-y-2">
               <Label htmlFor="nome">nome</Label>
               <Input

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -63,7 +63,7 @@ export function AddByLinkDialog({ open, onOpenChange, onCreate }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o) }}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[560px]" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
@@ -71,7 +71,6 @@ export function AddByLinkDialog({ open, onOpenChange, onCreate }: Props) {
             </span>
             Nova candidatura
           </DialogTitle>
-          <DialogDescription>Preencha os dados da vaga. Origem é obrigatória (backend).</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

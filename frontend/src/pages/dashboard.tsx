@@ -62,14 +62,7 @@ export function Dashboard() {
 
   return (
     <div className="flex h-full flex-col gap-6">
-      <PageHeader
-        title="Candidaturas"
-        description={
-          aba === "dashboard"
-            ? "Histórico de transições das suas vagas: veja quantas avançaram, pararam ou foram direto encerradas."
-            : "Seu funil de vagas em 5 etapas. Arraste os cards entre as colunas; clique para editar e ver o histórico."
-        }
-      >
+      <PageHeader title="Candidaturas">
         {aba === "kanban" && (
           <Button variant="outline" size="sm" onClick={refresh} className="gap-1.5 text-muted-foreground hover:text-foreground">
             <RefreshCw className="h-4 w-4" /> atualizar

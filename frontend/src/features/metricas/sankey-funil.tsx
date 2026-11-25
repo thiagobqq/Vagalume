@@ -324,8 +324,14 @@ export function SankeyFunil({ fluxos, totalCandidaturas, selecao, onSelect }: Pr
 
   return (
     <div className="space-y-3">
-      {/* Barra de inspeção ao passar o mouse (ou dica) */}
-      <div className="flex min-h-[38px] flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/15 bg-[var(--nb-paper)]/70 px-3.5 py-2 text-xs">
+      {/* Barra de inspeção ao passar o mouse */}
+      <div
+        className={
+          hover || selecao
+            ? "flex min-h-[38px] flex-wrap items-center justify-between gap-2 rounded-xl border border-ink/15 bg-[var(--nb-paper)]/70 px-3.5 py-2 text-xs"
+            : "min-h-[38px]"
+        }
+      >
         {hover?.tipo === "fluxo" ? (
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 font-bold text-foreground">
@@ -364,17 +370,13 @@ export function SankeyFunil({ fluxos, totalCandidaturas, selecao, onSelect }: Pr
             </span>
             <span className="text-muted-foreground">{hover.node.meta.shortHint}</span>
           </div>
-        ) : (
-          <span className="text-muted-foreground">
-            Passe o mouse ou clique em qualquer faixa ou etapa do diagrama para filtrar as vagas daquele caminho.
-          </span>
-        )}
+        ) : null}
 
         {selecao && (
           <button
             type="button"
             onClick={() => onSelect(null)}
-            className="text-xs font-semibold text-foreground underline underline-offset-4 hover:opacity-75"
+            className="ml-auto text-xs font-semibold text-foreground underline underline-offset-4 hover:opacity-75"
           >
             limpar seleção
           </button>
