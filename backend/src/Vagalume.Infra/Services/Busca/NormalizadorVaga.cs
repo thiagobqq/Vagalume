@@ -6,6 +6,12 @@ namespace Vagalume.Infra.Services.Busca;
 
 public static class NormalizadorVaga
 {
+    public const int MaxTitulo = 300;
+    public const int MaxEmpresa = 200;
+    public const int MaxLocalizacao = 200;
+    public const int MaxUrl = 2048;
+    public const int MaxDescricao = 20000;
+
     public static VagaColetada Normalizar(VagaColetada cru, FonteBusca fonte)
     {
         var empresa = string.IsNullOrWhiteSpace(cru.Empresa) ? fonte.NomeEmpresa : cru.Empresa;
@@ -21,10 +27,11 @@ public static class NormalizadorVaga
 
         return cru with
         {
-            Titulo = cru.Titulo.Trim(),
-            Empresa = empresa?.Trim(),
-            Localizacao = string.IsNullOrWhiteSpace(cru.Localizacao) ? null : cru.Localizacao.Trim(),
-            Descricao = Trim(descricao, 20000),
+            Titulo = Trim(cru.Titulo.Trim(), MaxTitulo) ?? string.Empty,
+            Empresa = Trim(empresa?.Trim(), MaxEmpresa),
+            Localizacao = string.IsNullOrWhiteSpace(cru.Localizacao) ? null : Trim(cru.Localizacao.Trim(), MaxLocalizacao),
+            Url = Trim(cru.Url.Trim(), MaxUrl) ?? string.Empty,
+            Descricao = Trim(descricao, MaxDescricao),
             Modalidade = modalidade,
             Nivel = nivel
         };
@@ -41,8 +48,12 @@ public static class NormalizadorVaga
             return ModalidadeVaga.Presencial;
 
         var corpo = TextoVaga.Normalizar(descricao);
-        if (Contem(corpo, "remoto", "remote", "home office"))
+        if (Contem(corpo, "remoto", "remote", "home office", "100% remoto"))
             return ModalidadeVaga.Remoto;
+        if (Contem(corpo, "hibrido", "modelo hibrido", "formato hibrido", "hybrid"))
+            return ModalidadeVaga.Hibrido;
+        if (Contem(corpo, "presencial", "modelo presencial", "on-site", "onsite"))
+            return ModalidadeVaga.Presencial;
 
         return ModalidadeVaga.NaoInformado;
     }
@@ -58,9 +69,11 @@ public static class NormalizadorVaga
             return NivelVaga.Senior;
 
         var corpo = TextoVaga.Normalizar(descricao);
-        if (Contem(corpo, "junior", "estagio", "internship"))
+        if (Contem(corpo, "junior", "jr", "estagio", "estagiario", "internship"))
             return NivelVaga.Junior;
-        if (Contem(corpo, "senior"))
+        if (Contem(corpo, "pleno", "mid-level", "mid level"))
+            return NivelVaga.Pleno;
+        if (Contem(corpo, "senior", "sr"))
             return NivelVaga.Senior;
 
         return NivelVaga.NaoInformado;
@@ -69,6 +82,6 @@ public static class NormalizadorVaga
     private static bool Contem(string texto, params string[] termos)
         => termos.Any(t => TextoVaga.ContemTermo(texto, t));
 
-    private static string? Trim(string? texto, int max)
+    internal static string? Trim(string? texto, int max)
         => texto is null || texto.Length <= max ? texto : texto[..max];
 }

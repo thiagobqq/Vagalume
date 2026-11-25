@@ -13,17 +13,30 @@ public class DedupService
 
     public async Task<IndiceDedup> CarregarIndiceAsync(Guid usuarioId, CancellationToken ct)
     {
-        var urls = await _db.Vagas
+        var vagas = await _db.Vagas
+            .AsNoTracking()
             .Where(v => v.UsuarioId == usuarioId)
-            .Select(v => v.UrlNormalizada)
+            .Select(v => new { v.UrlNormalizada, v.HashDedup })
             .ToListAsync(ct);
 
-        var hashes = await _db.Vagas
-            .Where(v => v.UsuarioId == usuarioId)
-            .Select(v => v.HashDedup)
+        var linksCandidaturas = await _db.Candidaturas
+            .AsNoTracking()
+            .Where(c => c.UsuarioId == usuarioId && c.Link != null)
+            .Select(c => c.Link!)
             .ToListAsync(ct);
 
-        return new IndiceDedup(urls, hashes);
+        var indice = new IndiceDedup(
+            vagas.Select(v => v.UrlNormalizada),
+            vagas.Select(v => v.HashDedup));
+
+        foreach (var link in linksCandidaturas)
+        {
+            var normalizado = TextoVaga.NormalizarUrl(link);
+            if (!string.IsNullOrEmpty(normalizado))
+                indice.AdicionarUrl(normalizado);
+        }
+
+        return indice;
     }
 
     private readonly AppDbContext _db;

@@ -20,6 +20,14 @@ public class MetricasFunilDto
     public List<TransicaoHistoricoDto> Transicoes { get; set; } = new();
     public List<MetricasOrigemDto> PorOrigem { get; set; } = new();
     public List<CandidaturaFluxoDto> Candidaturas { get; set; } = new();
+    public List<InsightFunilDto> Insights { get; set; } = new();
+}
+
+public class InsightFunilDto
+{
+    public string Tipo { get; set; } = string.Empty; // "positivo" | "atencao" | "info"
+    public string Titulo { get; set; } = string.Empty;
+    public string Descricao { get; set; } = string.Empty;
 }
 
 public class EtapaFunilDto

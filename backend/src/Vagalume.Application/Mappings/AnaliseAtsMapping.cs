@@ -28,6 +28,7 @@ public static class AnaliseAtsMapping
         Sugestoes = a.Sugestoes.ToList(),
         Provedor = a.Provedor.ToString(),
         Modelo = a.Modelo,
-        CriadoEm = a.CriadoEm
+        CriadoEm = a.CriadoEm,
+        AtualizadoEm = a.AtualizadoEm
     };
 }

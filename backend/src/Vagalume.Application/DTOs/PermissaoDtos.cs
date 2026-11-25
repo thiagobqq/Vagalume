@@ -13,6 +13,9 @@ public class UsuarioPermissoesDto
     public string Nome { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public List<string> Permissoes { get; set; } = new();
+    public bool SolicitacaoPendente { get; set; }
+    public string? SolicitacaoMensagem { get; set; }
+    public DateTime? SolicitacaoEm { get; set; }
 }
 
 public class ConcederPermissaoRequest

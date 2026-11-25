@@ -23,4 +23,5 @@ public class AnaliseCompatibilidadeDto
     public string Modelo { get; set; } = string.Empty;
     public bool Desatualizada { get; set; }
     public DateTime CriadoEm { get; set; }
+    public DateTime AtualizadoEm { get; set; }
 }

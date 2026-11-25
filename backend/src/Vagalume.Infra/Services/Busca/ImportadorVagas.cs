@@ -41,21 +41,26 @@ public class ImportadorVagas(AppDbContext db, DedupService dedup, FiltroVagaServ
 
             indice.Adicionar(url, hash);
 
+            var empresa = NormalizadorVaga.Trim(normalizada.Empresa ?? fonte.NomeEmpresa ?? "Empresa não informada", NormalizadorVaga.MaxEmpresa)
+                ?? "Empresa não informada";
+            var fonteNome = NormalizadorVaga.Trim(detalhe.FonteNome, 200) ?? fonte.Tipo.ToString();
+            var urlNorm = NormalizadorVaga.Trim(url, NormalizadorVaga.MaxUrl) ?? string.Empty;
+
             var entidade = new Vaga
             {
                 Id = Guid.NewGuid(),
                 UsuarioId = execucao.UsuarioId,
                 Titulo = normalizada.Titulo,
-                Empresa = normalizada.Empresa ?? fonte.NomeEmpresa ?? "Empresa não informada",
+                Empresa = empresa,
                 Localizacao = normalizada.Localizacao,
                 Modalidade = normalizada.Modalidade,
                 Nivel = normalizada.Nivel,
                 Url = normalizada.Url,
-                UrlNormalizada = url,
+                UrlNormalizada = urlNorm,
                 Descricao = normalizada.Descricao,
                 PublicadaEm = normalizada.PublicadaEm,
                 FonteTipo = fonte.Tipo,
-                FonteNome = detalhe.FonteNome,
+                FonteNome = fonteNome,
                 HashDedup = hash,
                 Status = StatusVaga.Nova,
                 CriadoEm = clock.UtcNow

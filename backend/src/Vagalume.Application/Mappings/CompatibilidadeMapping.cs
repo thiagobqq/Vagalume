@@ -25,6 +25,7 @@ public static class CompatibilidadeMapping
         Provedor = a.Provedor.ToString(),
         Modelo = a.Modelo,
         Desatualizada = desatualizada,
-        CriadoEm = a.CriadoEm
+        CriadoEm = a.CriadoEm,
+        AtualizadoEm = a.AtualizadoEm
     };
 }

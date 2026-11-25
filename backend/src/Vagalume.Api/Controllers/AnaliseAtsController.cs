@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Vagalume.Api.Extensions;
 using Vagalume.Application.Common;
@@ -70,6 +71,7 @@ public class AnaliseAtsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/analise-ats")]
+    [EnableRateLimiting("ia")]
     [ProducesResponseType(typeof(GenericResponseData<AnaliseAtsDto>), 200)]
     [ProducesResponseType(typeof(GenericResponseData<object>), 400)]
     [ProducesResponseType(typeof(GenericResponseData<object>), 404)]
@@ -97,15 +99,26 @@ public class AnaliseAtsController : ControllerBase
             return BadRequest(GenericResponseData<object>.Fail("Reconfigure sua API key de IA em Configurações"));
 
         string texto;
-        try
+        if (!string.IsNullOrWhiteSpace(curriculo.TextoExtraido))
         {
-            var (stream, _, _) = await _storage.OpenReadAsync(curriculo.CaminhoArmazenado, curriculo.NomeArquivoOriginal, ct);
-            await using (stream)
-                texto = await _extrator.ExtrairAsync(stream, ct);
+            texto = curriculo.TextoExtraido;
         }
-        catch (FileNotFoundException)
+        else
         {
-            return BadRequest(GenericResponseData<object>.Fail("Arquivo do currículo não encontrado no servidor"));
+            try
+            {
+                var (stream, _, _) = await _storage.OpenReadAsync(curriculo.CaminhoArmazenado, curriculo.NomeArquivoOriginal, ct);
+                await using (stream)
+                    texto = await _extrator.ExtrairAsync(stream, ct);
+            }
+            catch (FileNotFoundException)
+            {
+                return BadRequest(GenericResponseData<object>.Fail("Arquivo do currículo não encontrado no servidor"));
+            }
+            catch (InvalidDataException ex)
+            {
+                return BadRequest(GenericResponseData<object>.Fail(ex.Message));
+            }
         }
 
         if (string.IsNullOrWhiteSpace(texto))
@@ -129,14 +142,14 @@ public class AnaliseAtsController : ControllerBase
             var status = ex.Message.Contains("tempo limite", StringComparison.OrdinalIgnoreCase) ? 504 : 502;
             return StatusCode(status, GenericResponseData<object>.Fail(ex.Message));
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             return StatusCode(504, GenericResponseData<object>.Fail("A análise excedeu o tempo limite"));
         }
 
         var agora = _clock.UtcNow;
         var analise = await _db.AnalisesAts
-            .FirstOrDefaultAsync(a => a.UsuarioId == usuarioId && a.CurriculoId == id);
+            .FirstOrDefaultAsync(a => a.UsuarioId == usuarioId && a.CurriculoId == id, ct);
 
         if (analise is null)
         {
@@ -160,14 +173,32 @@ public class AnaliseAtsController : ControllerBase
         analise.Sugestoes = resultado.Sugestoes.ToList();
         analise.AtualizadoEm = agora;
 
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            _db.ChangeTracker.Clear();
+            var existente = await _db.AnalisesAts
+                .FirstOrDefaultAsync(a => a.UsuarioId == usuarioId && a.CurriculoId == id, ct);
+            if (existente is null) throw;
 
-        var atualizada = await _db.AnalisesAts
-            .AsNoTracking()
-            .Include(a => a.Curriculo)
-            .FirstAsync(a => a.Id == analise.Id);
+            existente.Provedor = config.Provedor;
+            existente.Modelo = config.Modelo;
+            existente.Score = resultado.Score;
+            existente.Resumo = resultado.Resumo;
+            existente.Categorias = resultado.Categorias.ToList();
+            existente.Alertas = resultado.Alertas.ToList();
+            existente.PontosFortes = resultado.PontosFortes.ToList();
+            existente.Sugestoes = resultado.Sugestoes.ToList();
+            existente.AtualizadoEm = agora;
+            await _db.SaveChangesAsync(ct);
+            analise = existente;
+        }
 
+        analise.Curriculo = curriculo;
         return Ok(GenericResponseData<AnaliseAtsDto>.Ok(
-            AnaliseAtsMapping.ToDto(atualizada), "Análise ATS gerada"));
+            AnaliseAtsMapping.ToDto(analise), "Análise ATS gerada"));
     }
 }

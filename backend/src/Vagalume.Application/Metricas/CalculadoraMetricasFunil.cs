@@ -110,7 +110,10 @@ public static class CalculadoraMetricasFunil
             }
 
             if (chegouEntrevista)
+            {
+                resultado.ChegaramEntrevista++;
                 accOrigem.Entrevistas++;
+            }
 
             if (chegouOferta)
                 accOrigem.Ofertas++;
@@ -203,7 +206,6 @@ public static class CalculadoraMetricasFunil
         resultado.TotalEncerradas = atuaisPorEtapa[StatusCandidatura.Encerrado];
         resultado.EmAndamento = resultado.TotalCandidaturas - resultado.TotalEncerradas;
         resultado.AvancaramParaTriagem = passaramPorEtapa[StatusCandidatura.Triagem];
-        resultado.ChegaramEntrevista = passaramPorEtapa[StatusCandidatura.Entrevista];
         resultado.ChegaramOferta = passaramPorEtapa[StatusCandidatura.Oferta];
 
         if (temposPrimeiraRespostaHoras.Count > 0)
@@ -270,7 +272,72 @@ public static class CalculadoraMetricasFunil
             .OrderByDescending(c => c.AtualizadoEm)
             .ToList();
 
+        resultado.Insights = GerarInsights(resultado, candidaturas);
+
         return resultado;
+    }
+
+    private static List<InsightFunilDto> GerarInsights(
+        MetricasFunilDto m,
+        IReadOnlyCollection<Candidatura> candidaturas)
+    {
+        var insights = new List<InsightFunilDto>();
+        if (m.TotalCandidaturas == 0)
+            return insights;
+
+        // 1. Melhor canal por taxa de avanço (quando há >= 2 canais com ao menos 2 candidaturas)
+        var canaisRelevantes = m.PorOrigem.Where(o => o.Total >= 2).OrderByDescending(o => o.TaxaAvanco).ToList();
+        if (canaisRelevantes.Count >= 2 && canaisRelevantes[0].TaxaAvanco > canaisRelevantes[^1].TaxaAvanco + 10)
+        {
+            var melhor = canaisRelevantes[0];
+            var pior = canaisRelevantes[^1];
+            insights.Add(new InsightFunilDto
+            {
+                Tipo = "positivo",
+                Titulo = $"{melhor.Origem} é seu melhor canal",
+                Descricao = $"Avança em {melhor.TaxaAvanco:0.#}% das aplicações ({melhor.Avancaram}/{melhor.Total}), contra {pior.TaxaAvanco:0.#}% em {pior.Origem}."
+            });
+        }
+
+        // 2. Possível ghosting: candidaturas paradas em Aplicado há > 14 dias
+        var referencia = DateTime.UtcNow;
+        var paradas14d = candidaturas.Count(c =>
+            c.Status == StatusCandidatura.Aplicado && (referencia - c.AtualizadoEm).TotalDays >= 14);
+        if (paradas14d > 0)
+        {
+            insights.Add(new InsightFunilDto
+            {
+                Tipo = "atencao",
+                Titulo = $"{paradas14d} candidatura{(paradas14d == 1 ? "" : "s")} sem retorno há 14+ dias",
+                Descricao = "Considere fazer um follow-up curto ou encerrar processos sem resposta para manter seu funil limpo."
+            });
+        }
+
+        // 3. Alto índice de recusa direta na triagem inicial
+        var taxaRecusaDireta = ArredondarPercentual(m.DiretasEncerradas, m.TotalCandidaturas);
+        if (m.TotalCandidaturas >= 4 && taxaRecusaDireta >= 50)
+        {
+            insights.Add(new InsightFunilDto
+            {
+                Tipo = "atencao",
+                Titulo = $"{taxaRecusaDireta:0.#}% encerradas já na primeira etapa",
+                Descricao = "Vale revisar seu currículo com a Análise ATS e ajustar palavras-chave para a vaga antes de aplicar."
+            });
+        }
+
+        // 4. Boa conversão para entrevistas
+        var taxaEntrevista = ArredondarPercentual(m.ChegaramEntrevista, m.TotalCandidaturas);
+        if (m.ChegaramEntrevista >= 2 && taxaEntrevista >= 25)
+        {
+            insights.Add(new InsightFunilDto
+            {
+                Tipo = "positivo",
+                Titulo = $"Ótima taxa de entrevistas ({taxaEntrevista:0.#}%)",
+                Descricao = $"{m.ChegaramEntrevista} de {m.TotalCandidaturas} candidaturas chegaram à etapa de entrevista."
+            });
+        }
+
+        return insights.Take(3).ToList();
     }
 
     /// <summary>

@@ -36,19 +36,41 @@ public class AdminPermissoesController : ControllerBase
 
     [HttpGet("usuarios")]
     [ProducesResponseType(typeof(GenericResponseData<List<UsuarioPermissoesDto>>), 200)]
-    public async Task<IActionResult> ListarUsuarios([FromQuery] string? busca)
+    public async Task<IActionResult> ListarUsuarios(
+        [FromQuery] string? busca,
+        [FromQuery] bool somentePendentes = false,
+        [FromQuery] int limite = 50)
     {
         var query = _db.Users.AsNoTracking();
+
+        if (somentePendentes)
+        {
+            var idsPendentes = _db.SolicitacoesVerificacao
+                .AsNoTracking()
+                .Where(s => s.Status == SolicitacaoVerificacao.StatusPendente)
+                .Select(s => s.UsuarioId);
+            query = query.Where(u => idsPendentes.Contains(u.Id));
+        }
 
         if (!string.IsNullOrWhiteSpace(busca))
         {
             var termo = busca.Trim();
-            query = query.Where(u => u.Nome.Contains(termo) || (u.Email != null && u.Email.Contains(termo)));
+            if (_db.Database.IsRelational())
+            {
+                var padrao = $"%{termo}%";
+                query = query.Where(u => EF.Functions.ILike(u.Nome, padrao) || (u.Email != null && EF.Functions.ILike(u.Email, padrao)));
+            }
+            else
+            {
+                query = query.Where(u =>
+                    u.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase)
+                    || (u.Email != null && u.Email.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+            }
         }
 
         var usuarios = await query
             .OrderBy(u => u.Nome)
-            .Take(50)
+            .Take(Math.Clamp(limite, 1, 200))
             .ToListAsync();
 
         var ids = usuarios.Select(u => u.Id).ToList();
@@ -60,18 +82,38 @@ public class AdminPermissoesController : ControllerBase
             .Select(p => new { p.UsuarioId, p.Chave })
             .ToListAsync();
 
-        var dtos = usuarios.Select(u => new UsuarioPermissoesDto
+        var solicitacoes = await _db.SolicitacoesVerificacao
+            .AsNoTracking()
+            .Where(s => ids.Contains(s.UsuarioId) && s.Status == SolicitacaoVerificacao.StatusPendente)
+            .OrderByDescending(s => s.CriadoEm)
+            .ToListAsync();
+
+        var solPorUsuario = solicitacoes
+            .GroupBy(s => s.UsuarioId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var dtos = usuarios.Select(u =>
         {
-            Id = u.Id,
-            Nome = u.Nome,
-            Email = u.Email ?? string.Empty,
-            Permissoes = permissoes
-                .Where(p => p.UsuarioId == u.Id)
-                .Select(p => p.Chave)
-                .Distinct()
-                .OrderBy(c => c)
-                .ToList()
-        }).ToList();
+            solPorUsuario.TryGetValue(u.Id, out var sol);
+            return new UsuarioPermissoesDto
+            {
+                Id = u.Id,
+                Nome = u.Nome,
+                Email = u.Email ?? string.Empty,
+                Permissoes = permissoes
+                    .Where(p => p.UsuarioId == u.Id)
+                    .Select(p => p.Chave)
+                    .Distinct()
+                    .OrderBy(c => c)
+                    .ToList(),
+                SolicitacaoPendente = sol is not null,
+                SolicitacaoMensagem = sol?.Mensagem,
+                SolicitacaoEm = sol?.CriadoEm
+            };
+        })
+        .OrderByDescending(u => u.SolicitacaoPendente)
+        .ThenBy(u => u.Nome)
+        .ToList();
 
         return Ok(GenericResponseData<List<UsuarioPermissoesDto>>.Ok(dtos));
     }
@@ -89,22 +131,46 @@ public class AdminPermissoesController : ControllerBase
         if (usuario is null)
             return NotFound(GenericResponseData<object>.Fail("Usuário não encontrado"));
 
-        var existe = await _db.UsuarioPermissoes
-            .AnyAsync(p => p.UsuarioId == id && p.Chave == request.Chave);
+        var agora = _clock.UtcNow;
+        var adminId = User.GetUserId();
+        var existente = await _db.UsuarioPermissoes
+            .FirstOrDefaultAsync(p => p.UsuarioId == id && p.Chave == request.Chave);
 
-        if (!existe)
+        if (existente is null)
         {
             _db.UsuarioPermissoes.Add(new UsuarioPermissao
             {
                 Id = Guid.NewGuid(),
                 UsuarioId = id,
                 Chave = request.Chave,
-                ConcedidoEm = _clock.UtcNow,
-                ConcedidoPorUsuarioId = User.GetUserId(),
+                ConcedidoEm = agora,
+                ConcedidoPorUsuarioId = adminId,
                 Origem = OrigemPermissao.Manual
             });
-            await _db.SaveChangesAsync();
         }
+        else if (existente.ExpiraEm != null && existente.ExpiraEm <= agora)
+        {
+            // Reativa permissão expirada
+            existente.ExpiraEm = null;
+            existente.ConcedidoEm = agora;
+            existente.ConcedidoPorUsuarioId = adminId;
+            existente.Origem = OrigemPermissao.Manual;
+        }
+
+        if (request.Chave == Permissoes.VerifyUser || request.Chave == Permissoes.Admin)
+        {
+            var pendentes = await _db.SolicitacoesVerificacao
+                .Where(s => s.UsuarioId == id && s.Status == SolicitacaoVerificacao.StatusPendente)
+                .ToListAsync();
+            foreach (var p in pendentes)
+            {
+                p.Status = SolicitacaoVerificacao.StatusAprovada;
+                p.ResolvidoEm = agora;
+                p.ResolvidoPorUsuarioId = adminId;
+            }
+        }
+
+        await _db.SaveChangesAsync();
 
         return Ok(GenericResponseData<UsuarioPermissoesDto>.Ok(
             await MontarUsuarioDtoAsync(usuario), "Permissão concedida"));
@@ -112,9 +178,16 @@ public class AdminPermissoesController : ControllerBase
 
     [HttpDelete("usuarios/{id:guid}/permissoes/{chave}")]
     [ProducesResponseType(typeof(GenericResponseData<UsuarioPermissoesDto>), 200)]
+    [ProducesResponseType(typeof(GenericResponseData<object>), 400)]
     [ProducesResponseType(typeof(GenericResponseData<object>), 404)]
     public async Task<IActionResult> Revogar(Guid id, string chave)
     {
+        if (!Permissoes.Existe(chave))
+            return BadRequest(GenericResponseData<object>.Fail("Permissão desconhecida"));
+
+        if (chave == Permissoes.Admin && id == User.GetUserId())
+            return BadRequest(GenericResponseData<object>.Fail("Você não pode revogar sua própria permissão de administrador"));
+
         var usuario = await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
         if (usuario is null)
             return NotFound(GenericResponseData<object>.Fail("Usuário não encontrado"));
@@ -143,12 +216,21 @@ public class AdminPermissoesController : ControllerBase
             .OrderBy(c => c)
             .ToListAsync();
 
+        var sol = await _db.SolicitacoesVerificacao
+            .AsNoTracking()
+            .Where(s => s.UsuarioId == usuario.Id && s.Status == SolicitacaoVerificacao.StatusPendente)
+            .OrderByDescending(s => s.CriadoEm)
+            .FirstOrDefaultAsync();
+
         return new UsuarioPermissoesDto
         {
             Id = usuario.Id,
             Nome = usuario.Nome,
             Email = usuario.Email ?? string.Empty,
-            Permissoes = permissoes
+            Permissoes = permissoes,
+            SolicitacaoPendente = sol is not null,
+            SolicitacaoMensagem = sol?.Mensagem,
+            SolicitacaoEm = sol?.CriadoEm
         };
     }
 }

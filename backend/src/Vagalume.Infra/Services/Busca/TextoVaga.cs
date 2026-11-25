@@ -8,9 +8,11 @@ namespace Vagalume.Infra.Services.Busca;
 
 public static class TextoVaga
 {
+    private const int MaxCacheTermos = 512;
     private static readonly ConcurrentDictionary<string, Regex> _cacheTermos = new();
     private static readonly Regex _tags = new("<[^>]+>", RegexOptions.Compiled);
     private static readonly Regex _espacos = new(@"\s+", RegexOptions.Compiled);
+    private static readonly Regex _separadoresLocal = new(@"[,/\-|]+", RegexOptions.Compiled);
 
     public static string RemoverAcentos(string texto)
     {
@@ -48,11 +50,14 @@ public static class TextoVaga
         if (t.Length == 0 || textoNormalizado.Length == 0)
             return false;
 
+        if (_cacheTermos.Count >= MaxCacheTermos && !_cacheTermos.ContainsKey(t))
+            _cacheTermos.Clear();
+
         var regex = _cacheTermos.GetOrAdd(t, chave =>
         {
             var prefixo = char.IsLetterOrDigit(chave[0]) ? "(?<![a-z0-9])" : "";
             var sufixo = char.IsLetterOrDigit(chave[^1]) ? "(?![a-z0-9])" : "";
-            return new Regex(prefixo + Regex.Escape(chave) + sufixo, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            return new Regex(prefixo + Regex.Escape(chave) + sufixo, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
         });
 
         return regex.IsMatch(textoNormalizado);
@@ -97,7 +102,10 @@ public static class TextoVaga
 
     public static string HashDedup(string empresa, string titulo, string? localizacao)
     {
-        var chave = $"{Normalizar(empresa)}|{Normalizar(titulo)}|{Normalizar(localizacao)}";
+        var local = string.IsNullOrWhiteSpace(localizacao)
+            ? string.Empty
+            : Normalizar(_separadoresLocal.Replace(localizacao, " "));
+        var chave = $"{Normalizar(empresa)}|{Normalizar(titulo)}|{local}";
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(chave));
         return Convert.ToHexStringLower(bytes);
     }

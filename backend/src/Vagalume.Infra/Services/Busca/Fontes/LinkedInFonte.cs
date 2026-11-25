@@ -36,6 +36,8 @@ public class LinkedInFonte : ScraperFonteBase
         var vistos = new HashSet<string>(StringComparer.Ordinal);
         var detalhesBuscados = 0;
         var errosSeguidos = 0;
+        Exception? ultimoErro = null;
+        var algumaPaginaOk = false;
 
         foreach (var termo in termos)
         {
@@ -50,12 +52,22 @@ public class LinkedInFonte : ScraperFonteBase
                 {
                     doc = await ObterHtmlAsync(url, ct);
                     errosSeguidos = 0;
+                    algumaPaginaOk = true;
                 }
-                catch
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    ultimoErro = ex;
                     errosSeguidos++;
                     if (errosSeguidos >= MaxErrosSeguidos)
-                        return resultado;
+                    {
+                        if (!algumaPaginaOk)
+                            throw;
+                        return OrdenarPorRecencia(resultado);
+                    }
                     break;
                 }
 
@@ -91,6 +103,10 @@ public class LinkedInFonte : ScraperFonteBase
                             descricao = await ObterDescricaoAsync(id!, ct);
                             await EsperarAsync(ct);
                         }
+                        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                        {
+                            throw;
+                        }
                         catch
                         {
                             // detalhe é opcional: segue com os dados da listagem
@@ -113,9 +129,10 @@ public class LinkedInFonte : ScraperFonteBase
 
                 await EsperarAsync(ct);
             }
-
-            await EsperarAsync(ct);
         }
+
+        if (!algumaPaginaOk && ultimoErro is not null)
+            throw ultimoErro;
 
         return OrdenarPorRecencia(resultado);
     }

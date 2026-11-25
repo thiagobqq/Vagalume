@@ -4,29 +4,42 @@ namespace Vagalume.Application.Validators;
 
 public static class EnumValidator
 {
+    private static bool TryParseNome<T>(string? value, out T parsed) where T : struct, Enum
+    {
+        parsed = default;
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        var first = value[0];
+        if (char.IsDigit(first) || first == '-' || first == '+')
+            return false;
+
+        return Enum.TryParse(value, ignoreCase: false, out parsed) && Enum.IsDefined(parsed);
+    }
+
     public static bool TryParseOrigem(string value, out OrigemCandidatura origem)
-        => Enum.TryParse<OrigemCandidatura>(value, ignoreCase: false, out origem) && Enum.IsDefined(origem);
+        => TryParseNome(value, out origem);
 
     public static bool TryParseStatus(string value, out StatusCandidatura status)
-        => Enum.TryParse<StatusCandidatura>(value, ignoreCase: false, out status) && Enum.IsDefined(status);
+        => TryParseNome(value, out status);
 
     public static bool TryParseFonteTipo(string value, out FonteTipo tipo)
-        => Enum.TryParse<FonteTipo>(value, ignoreCase: false, out tipo) && Enum.IsDefined(tipo);
+        => TryParseNome(value, out tipo);
 
     public static bool TryParseStatusVaga(string value, out StatusVaga status)
-        => Enum.TryParse<StatusVaga>(value, ignoreCase: false, out status) && Enum.IsDefined(status);
+        => TryParseNome(value, out status);
 
     public static bool TryParseNivel(string value, out NivelVaga nivel)
-        => Enum.TryParse<NivelVaga>(value, ignoreCase: false, out nivel) && Enum.IsDefined(nivel);
+        => TryParseNome(value, out nivel);
 
     public static bool TryParseModalidade(string value, out ModalidadeVaga modalidade)
-        => Enum.TryParse<ModalidadeVaga>(value, ignoreCase: false, out modalidade) && Enum.IsDefined(modalidade);
+        => TryParseNome(value, out modalidade);
 
     public static bool TryParseCombina(string value, out CombinaCriterio combina)
-        => Enum.TryParse<CombinaCriterio>(value, ignoreCase: false, out combina) && Enum.IsDefined(combina);
+        => TryParseNome(value, out combina);
 
     public static bool TryParseProvedorIa(string value, out ProvedorIa provedor)
-        => Enum.TryParse<ProvedorIa>(value, ignoreCase: false, out provedor) && Enum.IsDefined(provedor);
+        => TryParseNome(value, out provedor);
 
     public static string OrigemValores => string.Join(", ", Enum.GetNames<OrigemCandidatura>());
     public static string StatusValores => string.Join(", ", Enum.GetNames<StatusCandidatura>());

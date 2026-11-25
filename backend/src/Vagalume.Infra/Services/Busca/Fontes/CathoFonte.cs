@@ -10,6 +10,7 @@ namespace Vagalume.Infra.Services.Busca.Fontes;
 public class CathoFonte : ScraperFonteBase
 {
     private const string BaseUrl = "https://www.catho.com.br";
+    private static readonly Uri BaseUri = new(BaseUrl);
     private static readonly Regex _slugInvalido = new(@"[^a-z0-9._-]", RegexOptions.Compiled);
 
     public CathoFonte(IHttpClientFactory factory, IOptions<ScrapingOptions> options) : base(factory, options) { }
@@ -25,6 +26,8 @@ public class CathoFonte : ScraperFonteBase
 
         var resultado = new List<VagaColetada>();
         var vistos = new HashSet<string>(StringComparer.Ordinal);
+        Exception? ultimoErro = null;
+        var algumaPaginaOk = false;
 
         foreach (var termo in termos)
         {
@@ -35,8 +38,20 @@ public class CathoFonte : ScraperFonteBase
 
                 var url = $"{BaseUrl}/vagas/{Slug(termo)}/?page={pagina}";
                 IHtmlDocument doc;
-                try { doc = await ObterHtmlAsync(url, ct); }
-                catch { break; }
+                try
+                {
+                    doc = await ObterHtmlAsync(url, ct);
+                    algumaPaginaOk = true;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    ultimoErro = ex;
+                    break;
+                }
 
                 var ofertas = doc.QuerySelectorAll("li[data-offer-item] article.offer");
                 if (ofertas.Length == 0)
@@ -50,7 +65,9 @@ public class CathoFonte : ScraperFonteBase
                     var titulo = link?.GetAttribute("title") ?? link?.TextContent?.Trim();
                     if (string.IsNullOrWhiteSpace(href) || string.IsNullOrWhiteSpace(titulo))
                         continue;
-                    if (!vistos.Add(href))
+
+                    var urlVaga = ResolverUrl(href);
+                    if (!vistos.Add(urlVaga))
                         continue;
 
                     var empresa = oferta.QuerySelector("p .text-12")?.TextContent?.Trim();
@@ -59,13 +76,14 @@ public class CathoFonte : ScraperFonteBase
                         .Where(t => t.Length > 0)
                         .ToList();
 
+                    // Preserva "Cidade - UF" completa em vez de descartar a cidade
                     var localLinha = paragrafos.FirstOrDefault(t => t.Contains(" - "));
-                    var local = localLinha is null ? null : localLinha.Split('-').Last().Trim();
+                    var local = ExtrairLocal(localLinha);
 
                     resultado.Add(new VagaColetada
                     {
                         Titulo = titulo,
-                        Url = $"{BaseUrl}{href}",
+                        Url = urlVaga,
                         Empresa = empresa,
                         Localizacao = local,
                         Descricao = string.Join(" ", paragrafos)
@@ -77,13 +95,36 @@ public class CathoFonte : ScraperFonteBase
 
                 await EsperarAsync(ct);
             }
-
-            await EsperarAsync(ct);
         }
+
+        if (!algumaPaginaOk && ultimoErro is not null)
+            throw ultimoErro;
 
         return OrdenarPorRecencia(resultado);
     }
 
-    private static string Slug(string termo)
-        => _slugInvalido.Replace(TextoVaga.RemoverAcentos(termo).ToLowerInvariant().Replace(' ', '-'), string.Empty);
+    private static string ResolverUrl(string href)
+        => Uri.TryCreate(BaseUri, href.Trim(), out var uri) ? uri.ToString() : $"{BaseUrl}{href}";
+
+    private static string? ExtrairLocal(string? localLinha)
+    {
+        if (string.IsNullOrWhiteSpace(localLinha))
+            return null;
+
+        var partes = localLinha.Split(" - ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (partes.Length >= 2)
+            return $"{partes[^2]} - {partes[^1]}";
+        return localLinha.Trim();
+    }
+
+    internal static string Slug(string termo)
+    {
+        var normalizado = TextoVaga.RemoverAcentos(termo)
+            .ToLowerInvariant()
+            .Replace("c#", "csharp")
+            .Replace("c++", "cplusplus")
+            .Replace(".net", "dotnet")
+            .Replace(' ', '-');
+        return _slugInvalido.Replace(normalizado, string.Empty);
+    }
 }

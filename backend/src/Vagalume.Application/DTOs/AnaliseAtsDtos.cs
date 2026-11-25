@@ -28,4 +28,5 @@ public class AnaliseAtsDto
     public string Provedor { get; set; } = string.Empty;
     public string Modelo { get; set; } = string.Empty;
     public DateTime CriadoEm { get; set; }
+    public DateTime AtualizadoEm { get; set; }
 }

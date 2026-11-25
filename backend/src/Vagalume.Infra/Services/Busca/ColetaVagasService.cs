@@ -87,7 +87,8 @@ public class ColetaVagasService : IBuscaVagasService
                 return execucao;
             }
 
-            var verificado = await _entitlements.HasAsync(usuarioId, Permissoes.VerifyUser);
+            var verificado = await _entitlements.HasAsync(usuarioId, Permissoes.VerifyUser)
+                || await _entitlements.HasAsync(usuarioId, Permissoes.Admin);
             var fontes = (await _db.FontesBusca
                 .Where(f => f.UsuarioId == usuarioId && f.Ativo)
                 .ToListAsync(ct))
@@ -111,8 +112,9 @@ public class ColetaVagasService : IBuscaVagasService
                 execucao.DetalhesPorFonte.Add(detalhe);
             }
 
-            perfil.UltimaExecucaoEm = _clock.UtcNow;
             execucao.FinalizarSeConcluida(_clock.UtcNow);
+            if (fontes.All(f => f.Tipo == FonteTipo.Agente))
+                perfil.UltimaExecucaoEm = _clock.UtcNow;
             await _db.SaveChangesAsync(ct);
 
             var locais = fontes.Where(f => f.Tipo != FonteTipo.Agente).ToList();
@@ -121,6 +123,12 @@ public class ColetaVagasService : IBuscaVagasService
             var lotes = new List<LoteLocal>();
             foreach (var fonte in locais)
             {
+                if (ct.IsCancellationRequested)
+                {
+                    lotes.Add(new(fonte, [], "Coleta cancelada ou fora do prazo"));
+                    continue;
+                }
+
                 var fonteTag = fonte.Tipo.ToString().ToLowerInvariant();
                 using var fonteActivity = VagalumeTelemetry.ActivitySource.StartActivity("busca.fonte");
                 fonteActivity?.SetTag("vagalume.fonte.tipo", fonteTag);
@@ -185,9 +193,18 @@ public class ColetaVagasService : IBuscaVagasService
             }
             _db.Entry(execucao).Property(e => e.DetalhesPorFonte).IsModified = true;
             execucao.FinalizarSeConcluida(_clock.UtcNow);
+
+            var perfilAtual = await _db.PerfisBusca.FirstOrDefaultAsync(p => p.UsuarioId == usuarioId, CancellationToken.None);
+            if (perfilAtual is not null && lotes.Any(l => l.Erro is null))
+                perfilAtual.UltimaExecucaoEm = _clock.UtcNow;
+
             await _db.SaveChangesAsync(CancellationToken.None);
             if (tx is not null) await tx.CommitAsync(CancellationToken.None);
-            if (novas.Count > 0) await _notificador.NotificarAsync(perfil, novas, ct);
+            if (novas.Count > 0)
+            {
+                try { await _notificador.NotificarAsync(perfil, novas, CancellationToken.None); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Falha ao notificar novas vagas do usuário {UsuarioId}", usuarioId); }
+            }
             return execucao;
         }
         catch (Exception ex)

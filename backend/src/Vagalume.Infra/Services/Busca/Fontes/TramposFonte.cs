@@ -26,8 +26,10 @@ public class TramposFonte : ScraperFonteBase
             .ToList();
 
         var resultado = new List<VagaColetada>();
+        var maxPaginas = Math.Clamp(Options.MaxPaginas * 3, 1, MaxPaginasVarredura);
+        var detalhesBuscados = 0;
 
-        for (var pagina = 1; pagina <= MaxPaginasVarredura; pagina++)
+        for (var pagina = 1; pagina <= maxPaginas; pagina++)
         {
             if (resultado.Count >= Options.MaxColeta)
                 break;
@@ -55,19 +57,27 @@ public class TramposFonte : ScraperFonteBase
                 string? descricao = null;
                 string? url = null;
 
-                try
+                if (detalhesBuscados < Options.MaxDetalhes)
                 {
-                    using var det = await ObterJsonAsync($"{BaseUrl}/{id}", ct);
-                    if (det.RootElement.TryGetProperty("opportunity", out var op))
+                    try
                     {
-                        descricao = Texto(op, "description");
-                        url = Texto(op, "url");
+                        using var det = await ObterJsonAsync($"{BaseUrl}/{id}", ct);
+                        if (det.RootElement.TryGetProperty("opportunity", out var op))
+                        {
+                            descricao = Texto(op, "description");
+                            url = Texto(op, "url");
+                        }
+                        detalhesBuscados++;
+                        await EsperarAsync(ct);
                     }
-                    await EsperarAsync(ct);
-                }
-                catch
-                {
-                    // detalhe é opcional: segue com os dados da listagem
+                    catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch
+                    {
+                        // detalhe é opcional: segue com os dados da listagem
+                    }
                 }
 
                 var empresa = Texto(item, "custom_company_name") ?? AninhadoTexto(item, "company", "name");

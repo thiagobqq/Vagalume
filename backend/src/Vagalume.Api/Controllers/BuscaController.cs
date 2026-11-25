@@ -68,12 +68,21 @@ public class BuscaController : ControllerBase
         if (!TimeOnly.TryParse(req.HoraExecucao ?? "08:00", CultureInfo.InvariantCulture, DateTimeStyles.None, out var hora))
             return BadRequest(GenericResponseData<object>.Fail("Hora de execução inválida. Use o formato HH:mm"));
 
-        var dias = string.IsNullOrWhiteSpace(req.DiasSemana) ? "0123456" : req.DiasSemana.Trim();
-        if (dias.Any(c => c is < '0' or > '6'))
+        var diasRaw = req.DiasSemana is null
+            ? "0123456"
+            : new string(req.DiasSemana.Trim().Distinct().OrderBy(c => c).ToArray());
+
+        if (diasRaw.Any(c => c is < '0' or > '6'))
             return BadRequest(GenericResponseData<object>.Fail("Dias da semana inválidos"));
 
-        if (req.Ativo && dias.Length == 0)
+        if (req.Ativo && diasRaw.Length == 0)
             return BadRequest(GenericResponseData<object>.Fail("Selecione ao menos um dia da semana"));
+
+        var dias = diasRaw;
+
+        var discordUrl = string.IsNullOrWhiteSpace(req.DiscordWebhookUrl) ? null : req.DiscordWebhookUrl.Trim();
+        if (discordUrl is not null && !Vagalume.Infra.Services.Seguranca.SafePublicHttpHandler.DiscordWebhookValido(discordUrl))
+            return BadRequest(GenericResponseData<object>.Fail("Informe uma URL HTTPS válida de webhook do Discord (https://discord.com/api/webhooks/...)"));
 
         var fuso = string.IsNullOrWhiteSpace(req.FusoHorario) ? "America/Sao_Paulo" : req.FusoHorario.Trim();
         try { _ = TimeZoneInfo.FindSystemTimeZoneById(fuso); }
@@ -100,7 +109,7 @@ public class BuscaController : ControllerBase
         perfil.HoraExecucao = hora;
         perfil.DiasSemana = dias;
         perfil.FusoHorario = fuso;
-        perfil.DiscordWebhookUrl = string.IsNullOrWhiteSpace(req.DiscordWebhookUrl) ? null : req.DiscordWebhookUrl.Trim();
+        perfil.DiscordWebhookUrl = discordUrl;
         perfil.AtualizadoEm = agora;
 
         await _db.SaveChangesAsync();
@@ -152,9 +161,16 @@ public class BuscaController : ControllerBase
         if (!await FontePermitidaAsync(usuarioId, tipo))
             return StatusCode(403, GenericResponseData<object>.Fail("Esta fonte é exclusiva para usuários verificados"));
 
+        var totalFontes = await _db.FontesBusca.CountAsync(f => f.UsuarioId == usuarioId);
+        if (totalFontes >= 25)
+            return BadRequest(GenericResponseData<object>.Fail("Limite de 25 fontes de busca atingido"));
+
         var identificador = string.IsNullOrWhiteSpace(req.Identificador) ? null : req.Identificador.Trim();
-        if (tipo == FonteTipo.Rss && identificador is null)
-            return BadRequest(GenericResponseData<object>.Fail("RSS exige a URL do feed em 'identificador'"));
+        if (tipo == FonteTipo.Rss)
+        {
+            if (identificador is null || !Vagalume.Infra.Services.Seguranca.SafePublicHttpHandler.UrlPublicaValida(identificador, exigirHttps: false))
+                return BadRequest(GenericResponseData<object>.Fail("RSS exige uma URL HTTP/HTTPS pública válida em 'identificador'"));
+        }
 
         if (tipo == FonteTipo.Agente && !WebhookAgente.UrlValida(req.WebhookUrl?.Trim()))
             return BadRequest(GenericResponseData<object>.Fail("Informe a URL HTTPS pública do webhook do agente"));
@@ -195,7 +211,16 @@ public class BuscaController : ControllerBase
         if (fonte is null)
             return NotFound(GenericResponseData<object>.Fail("Fonte não encontrada"));
 
-        if (!await FontePermitidaAsync(usuarioId, fonte.Tipo))
+        var apenasPausando = req.Ativo == false
+            && req.Identificador is null
+            && req.NomeEmpresa is null
+            && req.Nome is null
+            && req.WebhookUrl is null
+            && req.Cabecalhos is null
+            && req.SegredoOpenBot is null
+            && req.Instrucoes is null;
+
+        if (!apenasPausando && !await FontePermitidaAsync(usuarioId, fonte.Tipo))
             return StatusCode(403, GenericResponseData<object>.Fail("Esta fonte é exclusiva para usuários verificados"));
 
         if (fonte.Tipo == FonteTipo.Agente)
@@ -217,10 +242,18 @@ public class BuscaController : ControllerBase
             if (req.Instrucoes is not null)
                 fonte.Instrucoes = req.Instrucoes.Trim();
         }
-        else if (req.Identificador is not null && !string.IsNullOrWhiteSpace(req.Identificador))
-            fonte.Identificador = req.Identificador.Trim();
-        if (req.NomeEmpresa is not null && !string.IsNullOrWhiteSpace(req.NomeEmpresa))
-            fonte.NomeEmpresa = req.NomeEmpresa.Trim();
+        else if (req.Identificador is not null)
+        {
+            var idLimpo = string.IsNullOrWhiteSpace(req.Identificador) ? null : req.Identificador.Trim();
+            if (fonte.Tipo == FonteTipo.Rss)
+            {
+                if (idLimpo is null || !Vagalume.Infra.Services.Seguranca.SafePublicHttpHandler.UrlPublicaValida(idLimpo, exigirHttps: false))
+                    return BadRequest(GenericResponseData<object>.Fail("RSS exige uma URL HTTP/HTTPS pública válida em 'identificador'"));
+            }
+            fonte.Identificador = idLimpo;
+        }
+        if (req.NomeEmpresa is not null)
+            fonte.NomeEmpresa = string.IsNullOrWhiteSpace(req.NomeEmpresa) ? null : req.NomeEmpresa.Trim();
         if (req.Nome is not null)
             fonte.Nome = string.IsNullOrWhiteSpace(req.Nome) ? null : req.Nome.Trim();
         if (req.Ativo.HasValue)
@@ -300,6 +333,51 @@ public class BuscaController : ControllerBase
         return Ok(GenericResponseData<List<ExecucaoBuscaDto>>.Ok(execucoes.Select(BuscaMapping.ToDto).ToList()));
     }
 
+    [HttpPost("execucoes/{id:guid}/cancelar")]
+    [ProducesResponseType(typeof(GenericResponseData<ExecucaoBuscaDto>), 200)]
+    [ProducesResponseType(typeof(GenericResponseData<object>), 404)]
+    public async Task<IActionResult> CancelarExecucao(Guid id, CancellationToken ct)
+    {
+        var usuarioId = User.GetUserId();
+        var execucao = await _db.ExecucoesBusca
+            .FirstOrDefaultAsync(e => e.Id == id && e.UsuarioId == usuarioId, ct);
+
+        if (execucao is null)
+            return NotFound(GenericResponseData<object>.Fail("Execução não encontrada"));
+
+        if (execucao.FinalizadaEm.HasValue)
+            return Ok(GenericResponseData<ExecucaoBuscaDto>.Ok(BuscaMapping.ToDto(execucao), "Execução já finalizada"));
+
+        var agora = _clock.UtcNow;
+        foreach (var d in execucao.DetalhesPorFonte)
+        {
+            if (d.AguardandoAgente || d.FonteLocalPendenteId.HasValue)
+            {
+                d.AguardandoAgente = false;
+                d.FonteLocalPendenteId = null;
+                d.Sucesso = false;
+                d.Erro = "Cancelada pelo usuário";
+            }
+        }
+        execucao.Erro = "Cancelada pelo usuário";
+        execucao.Sucesso = false;
+        execucao.FinalizadaEm = agora;
+        _db.Entry(execucao).Property(e => e.DetalhesPorFonte).IsModified = true;
+
+        var pedidos = await _db.PedidosAgente
+            .Where(p => p.ExecucaoId == id && p.FinalizadoEm == null)
+            .ToListAsync(ct);
+        foreach (var p in pedidos)
+        {
+            p.FinalizadoEm = agora;
+            p.ProximoEnvioEm = null;
+            p.TokenCifrado = null;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return Ok(GenericResponseData<ExecucaoBuscaDto>.Ok(BuscaMapping.ToDto(execucao), "Execução cancelada"));
+    }
+
     private string? CifrarCabecalhos(List<CabecalhoWebhook>? itens) =>
         itens is { Count: > 0 } ? _cripto.Proteger(JsonSerializer.Serialize(itens)) : null;
 
@@ -307,13 +385,20 @@ public class BuscaController : ControllerBase
     {
         if (!AcessoFonte.RequerVerificacao(tipo))
             return true;
-        return await _entitlements.HasAsync(usuarioId, Permissoes.VerifyUser);
+        return await _entitlements.HasAsync(usuarioId, Permissoes.VerifyUser)
+            || await _entitlements.HasAsync(usuarioId, Permissoes.Admin);
     }
 
     private static List<string> Limpar(List<string>? itens)
         => itens is null
             ? new List<string>()
-            : itens.Where(i => !string.IsNullOrWhiteSpace(i)).Select(i => i.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            : itens
+                .Where(i => !string.IsNullOrWhiteSpace(i))
+                .Select(i => i.Trim())
+                .Select(i => i.Length <= 80 ? i : i[..80])
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(30)
+                .ToList();
 
     private static bool ValidarEnumList<T>(
         List<string>? valores,

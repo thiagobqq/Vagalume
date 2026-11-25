@@ -12,6 +12,7 @@ namespace Vagalume.Infra.Services.Busca.Fontes;
 public class InfoJobsFonte : ScraperFonteBase
 {
     private const string BaseUrl = "https://www.infojobs.com.br";
+    private static readonly Uri BaseUri = new(BaseUrl);
     private static readonly Regex _regexLocal = new(@"([\p{L}][\p{L} .'-]+?) - ([A-Z]{2})\b", RegexOptions.Compiled);
 
     public InfoJobsFonte(IHttpClientFactory factory, IOptions<ScrapingOptions> options) : base(factory, options) { }
@@ -28,6 +29,8 @@ public class InfoJobsFonte : ScraperFonteBase
         var resultado = new List<VagaColetada>();
         var vistos = new HashSet<string>(StringComparer.Ordinal);
         var detalhesBuscados = 0;
+        Exception? ultimoErro = null;
+        var algumaPaginaOk = false;
 
         foreach (var termo in termos)
         {
@@ -38,8 +41,20 @@ public class InfoJobsFonte : ScraperFonteBase
 
                 var url = $"{BaseUrl}/empregos.aspx?palabra={Uri.EscapeDataString(termo)}&pagina={pagina}";
                 IHtmlDocument doc;
-                try { doc = await ObterHtmlAsync(url, ct); }
-                catch { break; }
+                try
+                {
+                    doc = await ObterHtmlAsync(url, ct);
+                    algumaPaginaOk = true;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    ultimoErro = ex;
+                    break;
+                }
 
                 var cards = doc.QuerySelectorAll("div.js_rowCard[data-href]");
                 if (cards.Length == 0)
@@ -56,6 +71,7 @@ public class InfoJobsFonte : ScraperFonteBase
                     if (!vistos.Add(id))
                         continue;
 
+                    var urlVaga = ResolverUrl(href);
                     var empresa = card.QuerySelector("a[href*='empresa-']")?.TextContent?.Trim();
                     var publicada = ParseData(card.QuerySelector(".js_date")?.GetAttribute("data-value"));
                     var local = ExtrairLocal(card.TextContent);
@@ -71,12 +87,17 @@ public class InfoJobsFonte : ScraperFonteBase
                     {
                         try
                         {
-                            var detalhe = await ObterHtmlAsync($"{BaseUrl}{href}", ct);
-                            var principal = detalhe.QuerySelector("main")?.TextContent;
+                            var detalhe = await ObterHtmlAsync(urlVaga, ct);
+                            var principal = detalhe.QuerySelector("div.js_vacancyDataPanels, div.vacancy-description, article, main p")?.ParentElement?.TextContent
+                                ?? detalhe.QuerySelector("div.js_vacancyDataPanels, div.vacancy-description")?.TextContent;
                             if (!string.IsNullOrWhiteSpace(principal))
                                 descricao = principal;
                             detalhesBuscados++;
                             await EsperarAsync(ct);
+                        }
+                        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                        {
+                            throw;
                         }
                         catch
                         {
@@ -87,7 +108,7 @@ public class InfoJobsFonte : ScraperFonteBase
                     resultado.Add(new VagaColetada
                     {
                         Titulo = titulo,
-                        Url = $"{BaseUrl}{href}",
+                        Url = urlVaga,
                         Empresa = empresa,
                         Localizacao = local,
                         Modalidade = modalidade,
@@ -101,12 +122,16 @@ public class InfoJobsFonte : ScraperFonteBase
 
                 await EsperarAsync(ct);
             }
-
-            await EsperarAsync(ct);
         }
+
+        if (!algumaPaginaOk && ultimoErro is not null)
+            throw ultimoErro;
 
         return OrdenarPorRecencia(resultado);
     }
+
+    private static string ResolverUrl(string href)
+        => Uri.TryCreate(BaseUri, href.Trim(), out var uri) ? uri.ToString() : $"{BaseUrl}{href}";
 
     private static string? ExtrairLocal(string texto)
     {
@@ -116,12 +141,13 @@ public class InfoJobsFonte : ScraperFonteBase
 
     private static ModalidadeVaga ExtrairModalidade(IElement card)
     {
-        var texto = card.QuerySelector("i.icon-house-and-building")?.ParentElement?.TextContent?.Trim().ToLowerInvariant();
+        var bruto = card.QuerySelector("i.icon-house-and-building")?.ParentElement?.TextContent;
+        var texto = TextoVaga.Normalizar(bruto);
         if (string.IsNullOrWhiteSpace(texto))
             return ModalidadeVaga.NaoInformado;
-        if (texto.Contains("remote") || texto.Contains("remoto"))
+        if (texto.Contains("remote") || texto.Contains("remoto") || texto.Contains("home office"))
             return ModalidadeVaga.Remoto;
-        if (texto.Contains("hibrid"))
+        if (texto.Contains("hibrid") || texto.Contains("hybrid"))
             return ModalidadeVaga.Hibrido;
         if (texto.Contains("presencial"))
             return ModalidadeVaga.Presencial;

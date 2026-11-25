@@ -46,7 +46,17 @@ public class VagasController : ControllerBase
         if (!string.IsNullOrWhiteSpace(busca))
         {
             var termo = busca.Trim();
-            query = query.Where(v => v.Titulo.Contains(termo) || v.Empresa.Contains(termo));
+            if (_db.Database.IsRelational())
+            {
+                var padrao = $"%{termo}%";
+                query = query.Where(v => EF.Functions.ILike(v.Titulo, padrao) || EF.Functions.ILike(v.Empresa, padrao));
+            }
+            else
+            {
+                query = query.Where(v =>
+                    v.Titulo.Contains(termo, StringComparison.OrdinalIgnoreCase)
+                    || v.Empresa.Contains(termo, StringComparison.OrdinalIgnoreCase));
+            }
         }
 
         var vagas = await query
@@ -96,14 +106,25 @@ public class VagasController : ControllerBase
 
         var agora = _clock.UtcNow;
 
+        var cargo = vaga.Titulo.Length <= 200 ? vaga.Titulo : vaga.Titulo[..200];
+        var empresa = vaga.Empresa.Length <= 200 ? vaga.Empresa : vaga.Empresa[..200];
+        var curriculoAtivoId = await _db.Curriculos
+            .AsNoTracking()
+            .Where(c => c.UsuarioId == usuarioId && c.Ativo)
+            .Select(c => (Guid?)c.Id)
+            .FirstOrDefaultAsync();
+
         var candidatura = new Candidatura
         {
             Id = Guid.NewGuid(),
             UsuarioId = usuarioId,
-            Empresa = vaga.Empresa,
-            Cargo = vaga.Titulo,
+            Empresa = empresa,
+            Cargo = cargo,
             Link = vaga.Url,
             Origem = MapearOrigem(vaga.FonteTipo),
+            DescricaoVaga = vaga.Descricao,
+            Modalidade = vaga.Modalidade,
+            CurriculoId = curriculoAtivoId,
             Observacoes = null,
             Status = StatusCandidatura.Aplicado,
             CriadoEm = agora,

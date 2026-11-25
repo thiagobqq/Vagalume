@@ -59,7 +59,7 @@ public class GupyFonte : ScraperFonteBase
                     if (UrlInativa(link))
                         continue;
 
-                    if (slug is not null && !link.Contains($"{slug}.gupy.io", StringComparison.OrdinalIgnoreCase))
+                    if (slug is not null && !HostCorrespondeSlug(link, slug))
                         continue;
 
                     var id = item.TryGetProperty("id", out var idEl) && idEl.TryGetInt64(out var v) ? v : 0;
@@ -90,11 +90,16 @@ public class GupyFonte : ScraperFonteBase
 
                 await EsperarAsync(ct);
             }
-
-            await EsperarAsync(ct);
         }
 
         return OrdenarPorRecencia(resultado);
+    }
+
+    private static bool HostCorrespondeSlug(string url, string slug)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return false;
+        return uri.Host.Equals($"{slug}.gupy.io", StringComparison.OrdinalIgnoreCase);
     }
 
     // A Gupy devolve vagas de páginas de carreira inativas com host inválido,
@@ -107,13 +112,14 @@ public class GupyFonte : ScraperFonteBase
         if (barra >= 0)
             host = host[..barra];
 
-        return host.Contains("inactive", StringComparison.OrdinalIgnoreCase)
-            || host.Contains('&');
+        return host.Contains('&')
+            || host.EndsWith("inactive.gupy.io", StringComparison.OrdinalIgnoreCase)
+            || host.Contains("&inactive", StringComparison.OrdinalIgnoreCase);
     }
 
     private static ModalidadeVaga MapearModalidade(string? workplaceType, JsonElement item)
     {
-        var tipo = (workplaceType ?? string.Empty).Trim().ToLowerInvariant();
+        var tipo = TextoVaga.Normalizar(workplaceType);
         if (tipo is "remote" or "remoto")
             return ModalidadeVaga.Remoto;
         if (tipo is "hybrid" or "hibrido")

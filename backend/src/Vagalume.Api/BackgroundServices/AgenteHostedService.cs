@@ -25,8 +25,19 @@ public class AgenteHostedService(IServiceScopeFactory scopes, IDateTimeProvider 
                 await Parallel.ForEachAsync(ids, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = ct },
                     async (id, cancel) =>
                     {
-                        using var envio = scopes.CreateScope();
-                        await envio.ServiceProvider.GetRequiredService<DespachoAgente>().ProcessarAsync(id, cancel);
+                        try
+                        {
+                            using var envio = scopes.CreateScope();
+                            await envio.ServiceProvider.GetRequiredService<DespachoAgente>().ProcessarAsync(id, cancel);
+                        }
+                        catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "Falha ao processar pedido de agente {PedidoId}", id);
+                        }
                     });
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }

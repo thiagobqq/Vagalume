@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using Vagalume.Domain.Analise;
 using Vagalume.Infra.Observability;
@@ -11,6 +12,7 @@ namespace Vagalume.Infra.Services.Analise;
 public class ClienteChatIa
 {
     public const string ClientName = "ia";
+    private static readonly Regex _thinkBlock = new(@"<think>[\s\S]*?</think>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly IHttpClientFactory _factory;
     private readonly IaOptions _options;
@@ -30,7 +32,7 @@ public class ClienteChatIa
         int? maxTokens = null)
     {
         using var activity = VagalumeTelemetry.ActivitySource.StartActivity("ia.chat.completions");
-        activity?.SetTag("vagalume.ia.modelo", provedor.Modelo);
+        activity?.SetTag("vagalume.ia.provedor", provedor.Nome);
         activity?.SetTag("vagalume.ia.json_mode", jsonMode);
         var inicio = Stopwatch.GetTimestamp();
         var resultado = "sucesso";
@@ -58,64 +60,74 @@ public class ClienteChatIa
         {
             Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
         };
+
         if (!string.IsNullOrWhiteSpace(provedor.ApiKey))
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", provedor.ApiKey);
+        {
+            var chaveLimpa = provedor.ApiKey.Trim();
+            if (chaveLimpa.Any(c => char.IsWhiteSpace(c) || char.IsControl(c) || c > 127))
+                throw new AnalisadorIaException("A API key contém caracteres inválidos. Cole novamente sua chave original.");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", chaveLimpa);
+        }
 
         try
         {
             HttpResponseMessage response;
+            string body;
             try
             {
                 response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+                using (response)
+                {
+                    activity?.SetTag("http.response.status_code", (int)response.StatusCode);
+                    body = await response.Content.ReadAsStringAsync(ct);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        resultado = "erro";
+                        var detalhe = ExtrairErro(body);
+                        var mensagem = (int)response.StatusCode is 401 or 403
+                            ? "Chave de IA inválida ou sem permissão no provedor."
+                            : $"Provedor de IA retornou erro {(int)response.StatusCode}. {detalhe}".Trim();
+                        throw new AnalisadorIaException(mensagem, (int)response.StatusCode);
+                    }
+                }
             }
             catch (TaskCanceledException) when (!ct.IsCancellationRequested)
             {
                 resultado = "timeout";
                 throw new AnalisadorIaException("O provedor de IA excedeu o tempo limite.");
             }
-            catch (HttpRequestException ex)
+            catch (HttpRequestException)
             {
                 resultado = "erro";
-                throw new AnalisadorIaException($"Falha ao contatar o provedor de IA: {ex.Message}");
+                throw new AnalisadorIaException("Não foi possível conectar ao provedor de IA. Verifique a disponibilidade do serviço.");
             }
 
-            using (response)
+            try
             {
-                activity?.SetTag("http.response.status_code", (int)response.StatusCode);
-                var body = await response.Content.ReadAsStringAsync(ct);
+                using var doc = JsonDocument.Parse(body);
+                var firstChoice = doc.RootElement.GetProperty("choices")[0];
+                var content = firstChoice
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
 
-                if (!response.IsSuccessStatusCode)
+                if (string.IsNullOrWhiteSpace(content))
                 {
                     resultado = "erro";
-                    var detalhe = ExtrairErro(body);
-                    var mensagem = (int)response.StatusCode is 401 or 403
-                        ? "Chave de IA inválida ou sem permissão no provedor."
-                        : $"Provedor de IA retornou erro {(int)response.StatusCode}. {detalhe}".Trim();
-                    throw new AnalisadorIaException(mensagem, (int)response.StatusCode);
+                    throw new AnalisadorIaException("O provedor de IA retornou uma resposta vazia.");
                 }
 
-                try
-                {
-                    using var doc = JsonDocument.Parse(body);
-                    var content = doc.RootElement
-                        .GetProperty("choices")[0]
-                        .GetProperty("message")
-                        .GetProperty("content")
-                        .GetString();
-
-                    if (string.IsNullOrWhiteSpace(content))
-                    {
-                        resultado = "erro";
-                        throw new AnalisadorIaException("O provedor de IA retornou uma resposta vazia.");
-                    }
-
-                    return content;
-                }
-                catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
-                {
-                    resultado = "erro";
-                    throw new AnalisadorIaException("Não foi possível interpretar a resposta do provedor de IA.");
-                }
+                return content;
+            }
+            catch (AnalisadorIaException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
+            {
+                resultado = "erro";
+                throw new AnalisadorIaException("Não foi possível interpretar a resposta do provedor de IA.");
             }
         }
         catch (Exception ex)
@@ -130,7 +142,7 @@ public class ClienteChatIa
             var duracaoMs = Stopwatch.GetElapsedTime(inicio).TotalMilliseconds;
             var tags = new TagList
             {
-                { "modelo", provedor.Modelo },
+                { "provedor", provedor.Nome },
                 { "resultado", resultado }
             };
             VagalumeTelemetry.IaChamadas.Add(1, tags);
@@ -140,14 +152,11 @@ public class ClienteChatIa
 
     internal static string ExtrairJson(string content)
     {
-        var texto = content.Trim();
-        if (texto.StartsWith("```", StringComparison.Ordinal))
-        {
-            var inicio = texto.IndexOf('{');
-            var fim = texto.LastIndexOf('}');
-            if (inicio >= 0 && fim > inicio)
-                return texto[inicio..(fim + 1)];
-        }
+        var texto = _thinkBlock.Replace(content ?? string.Empty, string.Empty).Trim();
+        var inicio = texto.IndexOf('{');
+        var fim = texto.LastIndexOf('}');
+        if (inicio >= 0 && fim > inicio)
+            return texto[inicio..(fim + 1)];
         return texto;
     }
 
@@ -156,11 +165,15 @@ public class ClienteChatIa
         try
         {
             using var doc = JsonDocument.Parse(body);
-            if (doc.RootElement.TryGetProperty("error", out var erro))
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
+                root = root[0];
+
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("error", out var erro))
             {
                 if (erro.ValueKind == JsonValueKind.String)
                     return erro.GetString() ?? string.Empty;
-                if (erro.TryGetProperty("message", out var msg))
+                if (erro.ValueKind == JsonValueKind.Object && erro.TryGetProperty("message", out var msg))
                     return msg.GetString() ?? string.Empty;
             }
         }
