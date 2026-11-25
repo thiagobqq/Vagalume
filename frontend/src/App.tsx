@@ -2,6 +2,7 @@ import { AppShell } from "./components/app/app-shell"
 import { Fireflies } from "./components/app/fireflies"
 import { Landing } from "./pages/landing"
 import { Dashboard } from "./pages/dashboard"
+import { MetricasPage } from "./pages/metricas"
 import { CurriculosPage } from "./pages/curriculos"
 import { VagasPage } from "./pages/vagas"
 import { AdminPage } from "./pages/admin"
@@ -32,6 +33,14 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
+              <Route
+                path="metricas"
+                element={
+                  <ProtectedRoute>
+                    <MetricasPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="curriculos"
                 element={
