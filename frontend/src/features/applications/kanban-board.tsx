@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   MouseSensor,
-  TouchSensor,
   closestCorners,
   useSensor,
   useSensors,
@@ -30,11 +30,18 @@ export function KanbanBoard({
   const [activeId, setActiveId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Status>("Aplicado")
   const suppressClick = useRef(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isDesktop = useMediaQuery("(min-width: 1024px)")
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+    useSensor(KeyboardSensor)
   )
 
   const grouped = useMemo(() => {
@@ -83,8 +90,10 @@ export function KanbanBoard({
   }
 
   function clearSuppress() {
-    setTimeout(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
       suppressClick.current = false
+      timerRef.current = null
     }, 180)
   }
 
@@ -105,7 +114,14 @@ export function KanbanBoard({
       {isDesktop ? (
         <div className="grid min-h-0 flex-1 grid-cols-5 grid-rows-1 content-start items-start gap-4">
           {STATUS_ORDER.map((s) => (
-            <KanbanColumn key={s} status={s} apps={grouped[s]} onOpenDetail={handleOpenDetail} />
+            <KanbanColumn
+              key={s}
+              status={s}
+              apps={grouped[s]}
+              onOpenDetail={handleOpenDetail}
+              onMove={onMove}
+              draggable
+            />
           ))}
         </div>
       ) : (
@@ -133,7 +149,13 @@ export function KanbanBoard({
             value={activeTab}
             className="mt-3 flex min-h-0 flex-1 flex-col focus-visible:outline-none"
           >
-            <KanbanColumn status={activeTab} apps={grouped[activeTab]} onOpenDetail={handleOpenDetail} />
+            <KanbanColumn
+              status={activeTab}
+              apps={grouped[activeTab]}
+              onOpenDetail={handleOpenDetail}
+              onMove={onMove}
+              draggable={false}
+            />
           </TabsContent>
         </Tabs>
       )}

@@ -9,10 +9,14 @@ export function KanbanColumn({
   status,
   apps,
   onOpenDetail,
+  onMove,
+  draggable = true,
 }: {
   status: Status
   apps: CandidaturaDto[]
   onOpenDetail?: (id: string) => void
+  onMove?: (id: string, s: Status) => void
+  draggable?: boolean
 }) {
   const { dot, soft, strong } = STATUS_STYLE[status]
   const { setNodeRef, isOver } = useDroppable({ id: status })
@@ -59,7 +63,15 @@ export function KanbanColumn({
               <p className="text-sm font-bold text-foreground/60">vazio</p>
             </div>
           ) : (
-            apps.map((a) => <ApplicationCard key={a.id} app={a} onOpenDetail={onOpenDetail} />)
+            apps.map((a) => (
+              <ApplicationCard
+                key={a.id}
+                app={a}
+                onOpenDetail={onOpenDetail}
+                onMove={onMove}
+                draggable={draggable}
+              />
+            ))
           )}
         </div>
       </div>

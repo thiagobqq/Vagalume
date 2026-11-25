@@ -145,7 +145,7 @@ function KanbanPreview() {
 
 export function Landing() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <AppHeader />
 
       <main className="mx-auto max-w-6xl space-y-20 px-4 py-12 sm:px-6 sm:py-16">
@@ -175,7 +175,7 @@ export function Landing() {
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/app">
+              <Link to="/register">
                 <Button size="lg" className="gap-2">
                   <Sparkles className="h-4 w-4" /> começar meu caderno <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -398,7 +398,7 @@ export function Landing() {
                 Leva um minuto, não precisa de cartão e você já sai organizando as próximas candidaturas.
               </p>
               <div className="mt-1 flex flex-wrap justify-center gap-3">
-                <Link to="/app">
+                <Link to="/register">
                   <Button size="lg" className="gap-2">
                     <Sparkles className="h-4 w-4" /> criar meu caderno <ArrowRight className="h-4 w-4" />
                   </Button>

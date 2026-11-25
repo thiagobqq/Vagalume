@@ -56,10 +56,19 @@ export function useBuscaConfig() {
     return atualizada
   }, [])
 
+  const editarFonte = useCallback(
+    async (id: string, patch: { identificador?: string; nomeEmpresa?: string; nome?: string }) => {
+      const atualizada = await atualizarFonteBusca(id, patch)
+      setFontes((p) => p.map((f) => (f.id === atualizada.id ? atualizada : f)))
+      return atualizada
+    },
+    []
+  )
+
   const removerFonte = useCallback(async (id: string) => {
     await removerFonteBusca(id)
     setFontes((p) => p.filter((f) => f.id !== id))
   }, [])
 
-  return { perfil, fontes, loading, erro, refresh, salvarPerfil, adicionarFonte, alternarFonte, removerFonte }
+  return { perfil, fontes, loading, erro, refresh, salvarPerfil, adicionarFonte, alternarFonte, editarFonte, removerFonte }
 }

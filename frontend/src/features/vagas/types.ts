@@ -134,4 +134,5 @@ export type AnaliseCompatibilidadeDto = {
   modelo: string
   desatualizada: boolean
   criadoEm: string
+  atualizadoEm?: string
 }

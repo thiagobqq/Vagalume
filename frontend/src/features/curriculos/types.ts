@@ -23,4 +23,5 @@ export type AnaliseAtsDto = {
   provedor: string
   modelo: string
   criadoEm: string
+  atualizadoEm?: string
 }

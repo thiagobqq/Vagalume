@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   aplicarVaga,
   atualizarStatusVaga,
+  cancelarExecucaoBusca,
   executarBusca,
   listarExecucoesBusca,
   listarVagas,
@@ -10,34 +11,45 @@ import {
 import type { ExecucaoBuscaDto, VagaDto } from "@/features/vagas/types"
 
 const INTERVALO_POLLING_MS = 3000
+const MAX_FALHAS_POLLING = 5
 
-export function useVagas() {
+export function useVagas(statusFiltro: string = "Nova") {
   const [vagas, setVagas] = useState<VagaDto[]>([])
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
   const [ultima, setUltima] = useState<ExecucaoBuscaDto | null>(null)
+  const [historicoExecucoes, setHistoricoExecucoes] = useState<ExecucaoBuscaDto[]>([])
   const [execucaoAtual, setExecucaoAtual] = useState<ExecucaoBuscaDto | null>(null)
 
+  const adicionadasRef = useRef<number>(0)
   const executando = !!execucaoAtual && execucaoAtual.finalizadaEm == null
+  const execucaoAtivaId = executando ? execucaoAtual.id : null
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setErro(null)
-    try {
-      setVagas(await listarVagas({ status: "Nova", limite: 200 }))
-    } catch (e) {
-      setErro((e as Error).message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const refresh = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!opts?.silent) setLoading(true)
+      setErro(null)
+      try {
+        setVagas(await listarVagas({ status: statusFiltro, limite: 200 }))
+      } catch (e) {
+        setErro((e as Error).message)
+      } finally {
+        if (!opts?.silent) setLoading(false)
+      }
+    },
+    [statusFiltro]
+  )
 
   const carregarUltima = useCallback(async () => {
     try {
       const execucoes = await listarExecucoesBusca()
+      setHistoricoExecucoes(execucoes)
       const maisRecente = execucoes[0] ?? null
       setUltima(maisRecente)
-      if (maisRecente && maisRecente.finalizadaEm == null) setExecucaoAtual(maisRecente)
+      if (maisRecente && maisRecente.finalizadaEm == null) {
+        adicionadasRef.current = maisRecente.adicionadas
+        setExecucaoAtual(maisRecente)
+      }
     } catch {
       /* métricas não bloqueiam a tela */
     }
@@ -45,29 +57,41 @@ export function useVagas() {
 
   useEffect(() => {
     void refresh()
-    void carregarUltima()
-  }, [refresh, carregarUltima])
+  }, [refresh])
 
-  // acompanha a execução em andamento (disparada aqui ou pelo agendador)
   useEffect(() => {
-    if (!execucaoAtual || execucaoAtual.finalizadaEm != null) return
-    const id = execucaoAtual.id
+    void carregarUltima()
+  }, [carregarUltima])
+
+  // Polling estável: depende apenas do ID da execução ativa (não recria timer a cada tick)
+  useEffect(() => {
+    if (!execucaoAtivaId) return
     let ativo = true
+    let falhasSeguidas = 0
 
     const timer = setInterval(async () => {
       try {
-        const ex = await obterExecucao(id)
+        const ex = await obterExecucao(execucaoAtivaId)
         if (!ativo) return
+        falhasSeguidas = 0
+
         if (ex.finalizadaEm != null) {
           setExecucaoAtual(null)
           setUltima(ex)
-          await refresh()
+          await Promise.all([refresh({ silent: true }), carregarUltima()])
         } else {
           setExecucaoAtual(ex)
-          if (ex.adicionadas > execucaoAtual.adicionadas) await refresh()
+          if (ex.adicionadas > adicionadasRef.current) {
+            adicionadasRef.current = ex.adicionadas
+            await refresh({ silent: true })
+          }
         }
       } catch {
-        /* erro transitório: mantém o polling */
+        falhasSeguidas++
+        if (falhasSeguidas >= MAX_FALHAS_POLLING && ativo) {
+          setExecucaoAtual(null)
+          setErro("Não foi possível acompanhar o status da busca. Tente atualizar a página.")
+        }
       }
     }, INTERVALO_POLLING_MS)
 
@@ -75,7 +99,7 @@ export function useVagas() {
       ativo = false
       clearInterval(timer)
     }
-  }, [execucaoAtual, refresh])
+  }, [execucaoAtivaId, refresh, carregarUltima])
 
   const buscarAgora = useCallback(async () => {
     setErro(null)
@@ -83,16 +107,30 @@ export function useVagas() {
       const execucao = await executarBusca()
       if (execucao.finalizadaEm != null) {
         setUltima(execucao)
-        await refresh()
+        await Promise.all([refresh({ silent: true }), carregarUltima()])
         return execucao
       }
+      adicionadasRef.current = execucao.adicionadas
       setExecucaoAtual(execucao)
       return execucao
     } catch (e) {
       setErro((e as Error).message)
       throw e
     }
-  }, [refresh])
+  }, [refresh, carregarUltima])
+
+  const cancelarBusca = useCallback(async () => {
+    if (!execucaoAtivaId) return
+    setErro(null)
+    try {
+      const cancelada = await cancelarExecucaoBusca(execucaoAtivaId)
+      setExecucaoAtual(null)
+      setUltima(cancelada)
+      await carregarUltima()
+    } catch (e) {
+      setErro((e as Error).message)
+    }
+  }, [execucaoAtivaId, carregarUltima])
 
   const aplicar = useCallback(async (id: string) => {
     const candidatura = await aplicarVaga(id)
@@ -100,10 +138,36 @@ export function useVagas() {
     return candidatura
   }, [])
 
-  const descartar = useCallback(async (id: string) => {
-    await atualizarStatusVaga(id, "Descartada")
-    setVagas((p) => p.filter((v) => v.id !== id))
-  }, [])
+  const mudarStatus = useCallback(
+    async (id: string, novoStatus: "Nova" | "Vista" | "Descartada") => {
+      const atualizada = await atualizarStatusVaga(id, novoStatus)
+      if (statusFiltro !== novoStatus) {
+        setVagas((p) => p.filter((v) => v.id !== id))
+      } else {
+        setVagas((p) => p.map((v) => (v.id === id ? atualizada : v)))
+      }
+      return atualizada
+    },
+    [statusFiltro]
+  )
 
-  return { vagas, loading, erro, executando, ultima, execucaoAtual, refresh, buscarAgora, aplicar, descartar }
+  const descartar = useCallback(async (id: string) => {
+    await mudarStatus(id, "Descartada")
+  }, [mudarStatus])
+
+  return {
+    vagas,
+    loading,
+    erro,
+    executando,
+    ultima,
+    historicoExecucoes,
+    execucaoAtual,
+    refresh,
+    buscarAgora,
+    cancelarBusca,
+    aplicar,
+    descartar,
+    mudarStatus,
+  }
 }

@@ -424,10 +424,19 @@ export function SankeyFunil({ fluxos, totalCandidaturas, selecao, onSelect }: Pr
               return (
                 <g
                   key={link.key}
-                  className="cursor-pointer transition-opacity duration-150"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Fluxo ${link.flow.origem} para ${link.flow.destino}: ${link.flow.quantidade} candidaturas`}
+                  className="cursor-pointer transition-opacity duration-150 focus:outline-none"
                   onMouseEnter={() => setHover({ tipo: "fluxo", link })}
                   onMouseLeave={() => setHover(null)}
                   onClick={() => toggleLink(link.flow)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      toggleLink(link.flow)
+                    }
+                  }}
                 >
                   <path
                     d={link.path}
@@ -477,11 +486,20 @@ export function SankeyFunil({ fluxos, totalCandidaturas, selecao, onSelect }: Pr
               return (
                 <g
                   key={node.id}
-                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Etapa ${node.meta.label}: ${node.value} candidaturas (${pct}%)`}
+                  className="cursor-pointer focus:outline-none"
                   opacity={active ? 1 : 0.35}
                   onMouseEnter={() => setHover({ tipo: "no", node })}
                   onMouseLeave={() => setHover(null)}
                   onClick={() => toggleNode(node.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      toggleNode(node.id)
+                    }
+                  }}
                 >
                   {/* Sombra dura estilo caderno */}
                   <rect

@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react"
 import { Link } from "react-router-dom"
 import {
   Dialog,
@@ -68,6 +67,7 @@ function AnaliseView({ analise, onReanalisar, gerando }: {
   onReanalisar: () => void
   gerando: boolean
 }) {
+  const dataExibicao = analise.atualizadoEm ?? analise.criadoEm
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -83,7 +83,7 @@ function AnaliseView({ analise, onReanalisar, gerando }: {
             <Badge variant="outline">{analise.provedor}</Badge>
             <span className="truncate">{analise.modelo}</span>
             <span>·</span>
-            <span className="truncate">currículo: {analise.curriculoNome}</span>
+            <span>{new Date(dataExibicao).toLocaleString("pt-BR")}</span>
           </div>
         </div>
       </div>
@@ -164,19 +164,7 @@ export function AnaliseAtsDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { analise, loading, carregado, gerando, erro, gerar } = useAnaliseAts(open ? curriculo?.id ?? null : null)
-  const autoGerou = useRef(false)
-
-  useEffect(() => {
-    if (!open) {
-      autoGerou.current = false
-      return
-    }
-    if (carregado && !gerando && !erro && analise === null && !autoGerou.current) {
-      autoGerou.current = true
-      void gerar()
-    }
-  }, [open, carregado, gerando, erro, analise, gerar])
+  const { analise, loading, gerando, erro, gerar } = useAnaliseAts(open ? curriculo?.id ?? null : null)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -186,7 +174,7 @@ export function AnaliseAtsDialog({
             <Wand2 className="h-4 w-4" /> Análise ATS do currículo
           </DialogTitle>
           <DialogDescription>
-            {curriculo ? curriculo.nomeArquivoOriginal : ""}
+            {curriculo ? curriculo.rotulo || curriculo.nomeArquivoOriginal : ""}
           </DialogDescription>
         </DialogHeader>
 
@@ -205,7 +193,11 @@ export function AnaliseAtsDialog({
               {erro}
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
-              <Link to="/app/curriculos" className="font-semibold underline underline-offset-2">
+              <Link
+                to="/app/curriculos?aba=config"
+                onClick={() => onOpenChange(false)}
+                className="font-semibold underline underline-offset-2"
+              >
                 Configurar provedor de IA
               </Link>
             </div>
@@ -218,8 +210,14 @@ export function AnaliseAtsDialog({
         ) : (
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              Nenhuma análise gerada ainda.
+              Nenhuma análise ATS gerada para esta versão ainda.
             </p>
+            <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                Ao continuar, o texto extraído deste PDF será enviado ao provedor de IA configurado por você (consumindo créditos da sua própria API key).
+              </span>
+            </div>
             <Button className="gap-1.5" onClick={() => void gerar()}>
               <Wand2 className="h-4 w-4" /> analisar currículo
             </Button>

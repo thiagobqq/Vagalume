@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { PageHeader } from "@/components/app/page-header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { VerificacaoDialog } from "@/components/app/verificacao-dialog"
@@ -10,8 +11,10 @@ import { Lock } from "lucide-react"
 
 export function CurriculosPage() {
   const { hasPermissao } = useAuth()
-  const verificado = hasPermissao(PERMISSOES.verifyUser)
-  const [aba, setAba] = useState("curriculos")
+  const verificado = hasPermissao(PERMISSOES.verifyUser) || hasPermissao(PERMISSOES.admin)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const abaParam = searchParams.get("aba")
+  const aba = abaParam === "config" && verificado ? "config" : "curriculos"
   const [verificacaoOpen, setVerificacaoOpen] = useState(false)
 
   return (
@@ -24,13 +27,17 @@ export function CurriculosPage() {
             setVerificacaoOpen(true)
             return
           }
-          setAba(valor)
+          if (valor === "config") {
+            setSearchParams({ aba: "config" }, { replace: true })
+          } else {
+            setSearchParams({}, { replace: true })
+          }
         }}
       >
         <TabsList>
           <TabsTrigger value="curriculos">Currículos</TabsTrigger>
           <TabsTrigger value="config" className="gap-1.5">
-            {!verificado && <Lock className="h-3.5 w-3.5" />} Configurações
+            {!verificado && <Lock className="h-3.5 w-3.5" />} Provedor de IA
           </TabsTrigger>
         </TabsList>
         <TabsContent value="curriculos">

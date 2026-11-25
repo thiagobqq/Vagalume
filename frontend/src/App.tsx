@@ -1,4 +1,5 @@
 import { AppShell } from "./components/app/app-shell"
+import { ErrorBoundary } from "./components/app/error-boundary"
 import { Fireflies } from "./components/app/fireflies"
 import { Landing } from "./pages/landing"
 import { Dashboard } from "./pages/dashboard"
@@ -17,54 +18,42 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 
 export default function App() {
   const content = (
-    <ThemeProvider>
-      <Fireflies />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route
-              path="/app"
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="metricas" element={<Navigate to="/app?aba=dashboard" replace />} />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <Fireflies />
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
               <Route
-                path="curriculos"
+                path="/app"
                 element={
                   <ProtectedRoute>
-                    <CurriculosPage />
+                    <AppShell />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="vagas"
-                element={
-                  <ProtectedRoute>
-                    <VagasPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="admin"
-                element={
-                  <ProtectedRoute permissao={PERMISSOES.admin}>
-                    <AdminPage />
-                  </ProtectedRoute>
-                }
-              />
-            </Route>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="metricas" element={<Navigate to="/app?aba=dashboard" replace />} />
+                <Route path="curriculos" element={<CurriculosPage />} />
+                <Route path="vagas" element={<VagasPage />} />
+                <Route
+                  path="admin"
+                  element={
+                    <ProtectedRoute permissao={PERMISSOES.admin}>
+                      <AdminPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Route>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 
   if (!GOOGLE_CLIENT_ID) return content

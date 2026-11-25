@@ -82,6 +82,10 @@ export function listarExecucoesBusca() {
   return apiJson<ExecucaoBuscaDto[]>("/api/busca/execucoes")
 }
 
+export function cancelarExecucaoBusca(id: string) {
+  return apiJson<ExecucaoBuscaDto>(`/api/busca/execucoes/${id}/cancelar`, { method: "POST" })
+}
+
 export async function obterCompatibilidade(vagaId: string): Promise<AnaliseCompatibilidadeDto | null> {
   const res = await apiFetch(`/api/vagas/${vagaId}/compatibilidade`)
   const text = await res.text()

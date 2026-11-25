@@ -1,7 +1,11 @@
+import { useState } from "react"
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LogoMark } from "@/components/app/logo"
+import { VerificacaoDialog } from "@/components/app/verificacao-dialog"
+import { ContaDialog } from "@/features/auth/conta-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/features/auth/auth-context"
 import { PERMISSOES } from "@/features/auth/permissoes"
-import { Kanban, FileText, LogOut, Menu, Sparkles, ShieldCheck, Zap } from "lucide-react"
+import { Kanban, FileText, KeyRound, LogOut, Menu, Sparkles, ShieldCheck, User, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV = [
@@ -43,7 +47,10 @@ function Brand() {
 export function AppShell() {
   const nav = useNavigate()
   const { user, logout, hasPermissao } = useAuth()
+  const [contaOpen, setContaOpen] = useState(false)
+  const [verificacaoOpen, setVerificacaoOpen] = useState(false)
   const itens = NAV.filter((item) => !item.permissao || hasPermissao(item.permissao))
+  const verificado = hasPermissao(PERMISSOES.verifyUser) || hasPermissao(PERMISSOES.admin)
 
   function handleLogout() {
     logout()
@@ -64,14 +71,14 @@ export function AppShell() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                    "flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
                     isActive
                       ? "border-[1.5px] border-ink bg-primary text-primary-foreground shadow-hard-xs"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )
                 }
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-4 w-4 shrink-0" />
                 {item.label}
               </NavLink>
             ))}
@@ -94,21 +101,41 @@ export function AppShell() {
                   </span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel className="normal-case">
-                  <div className="truncate text-xs font-bold tracking-normal text-foreground">
-                    {user?.nome ?? "visitante"}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs font-bold tracking-normal text-foreground">
+                      {user?.nome ?? "visitante"}
+                    </span>
+                    <Badge variant={verificado ? "offer" : "outline"} className="shrink-0 text-[10px]">
+                      {verificado ? "verificada" : "inicial"}
+                    </Badge>
                   </div>
                   <div className="truncate text-[11px] font-medium tracking-normal text-muted-foreground">
                     {user?.email ?? ""}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setContaOpen(true)}>
+                  <User className="h-4 w-4" /> Minha conta e senha
+                </DropdownMenuItem>
+                {verificado ? (
+                  <DropdownMenuItem asChild>
+                    <Link to="/app/curriculos?aba=config">
+                      <KeyRound className="h-4 w-4" /> Provedor de IA
+                    </Link>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onSelect={() => setVerificacaoOpen(true)}>
+                    <ShieldCheck className="h-4 w-4" /> Solicitar verificação
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link to="/">
                     <Sparkles className="h-4 w-4" /> Página inicial
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={handleLogout} className="text-destructive focus:text-destructive">
                   <LogOut className="h-4 w-4" /> sair
                 </DropdownMenuItem>
@@ -121,10 +148,15 @@ export function AppShell() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 md:hidden">
+              <DropdownMenuContent align="end" className="w-60 md:hidden">
                 <DropdownMenuLabel className="normal-case">
-                  <div className="truncate text-xs font-bold tracking-normal text-foreground">
-                    {user?.nome ?? "visitante"}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs font-bold tracking-normal text-foreground">
+                      {user?.nome ?? "visitante"}
+                    </span>
+                    <Badge variant={verificado ? "offer" : "outline"} className="shrink-0 text-[10px]">
+                      {verificado ? "verificada" : "inicial"}
+                    </Badge>
                   </div>
                   <div className="truncate text-[11px] font-medium tracking-normal text-muted-foreground">
                     {user?.email ?? ""}
@@ -139,6 +171,9 @@ export function AppShell() {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setContaOpen(true)}>
+                  <User className="h-4 w-4" /> Minha conta e senha
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/">
                     <Sparkles className="h-4 w-4" /> Página inicial
@@ -156,6 +191,13 @@ export function AppShell() {
       <main className="mx-auto w-full min-h-0 max-w-[1600px] flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:py-8">
         <Outlet />
       </main>
+
+      <ContaDialog
+        open={contaOpen}
+        onOpenChange={setContaOpen}
+        onSolicitarVerificacao={() => setVerificacaoOpen(true)}
+      />
+      <VerificacaoDialog open={verificacaoOpen} onOpenChange={setVerificacaoOpen} />
     </div>
   )
 }

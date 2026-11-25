@@ -87,7 +87,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (doc.startViewTransition) {
         setIsAnimating(true)
         const transition = doc.startViewTransition(() => applyAndStore(next))
-        transition.finished.finally(() => setIsAnimating(false))
+        transition.finished.catch(() => {}).finally(() => setIsAnimating(false))
         return
       }
 

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Sparkles, Wand2, XCircle } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, ShieldAlert, Sparkles, Wand2, XCircle } from "lucide-react"
 import { useCompatibilidade } from "@/hooks/use-compatibilidade"
 import type { AnaliseCompatibilidadeDto, VagaDto } from "./types"
 
@@ -40,6 +40,8 @@ function AnaliseView({ analise, onReanalisar, gerando }: {
             <span className="truncate">{analise.modelo}</span>
             <span>·</span>
             <span className="truncate">currículo: {analise.curriculoNome}</span>
+            <span>·</span>
+            <span>{new Date(analise.atualizadoEm ?? analise.criadoEm).toLocaleDateString("pt-BR")}</span>
           </div>
         </div>
       </div>
@@ -136,11 +138,19 @@ export function CompatibilidadeDialog({
               {erro}
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
-              <Link to="/app/curriculos" className="font-semibold underline underline-offset-2">
+              <Link
+                to="/app/curriculos?aba=config"
+                onClick={() => onOpenChange(false)}
+                className="font-semibold underline underline-offset-2"
+              >
                 Configurar provedor de IA
               </Link>
               <span className="text-muted-foreground">·</span>
-              <Link to="/app/curriculos" className="font-semibold underline underline-offset-2">
+              <Link
+                to="/app/curriculos"
+                onClick={() => onOpenChange(false)}
+                className="font-semibold underline underline-offset-2"
+              >
                 Enviar currículo
               </Link>
             </div>
@@ -155,6 +165,12 @@ export function CompatibilidadeDialog({
             <p className="text-sm text-muted-foreground">
               Nenhuma análise gerada ainda.
             </p>
+            <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+              <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                O texto do seu currículo ativo e a descrição desta vaga serão enviados ao seu provedor de IA (BYOK).
+              </span>
+            </div>
             <Button className="gap-1.5" onClick={() => void gerar()}>
               <Wand2 className="h-4 w-4" /> analisar compatibilidade
             </Button>

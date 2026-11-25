@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { obterMetricasFunil } from "@/features/metricas/api"
 import type { MetricasFunilDto, PeriodoFiltro } from "@/features/metricas/types"
 
 function calcularDataInicio(periodo: PeriodoFiltro): string | undefined {
-  if (periodo === "all") return undefined
+  if (periodo === "all" || periodo === "custom") return undefined
   const dias =
     periodo === "30d" ? 30 :
     periodo === "90d" ? 90 :
@@ -13,29 +13,43 @@ function calcularDataInicio(periodo: PeriodoFiltro): string | undefined {
   return d.toISOString()
 }
 
-export function useMetricasFunil(periodo: PeriodoFiltro, origem: string) {
+export function useMetricasFunil(
+  periodo: PeriodoFiltro,
+  origem: string,
+  customRange?: { de?: string; ate?: string }
+) {
   const [data, setData] = useState<MetricasFunilDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const reqIdRef = useRef(0)
+
+  const deCustom = customRange?.de
+  const ateCustom = customRange?.ate
 
   const refresh = useCallback(async () => {
+    const reqId = ++reqIdRef.current
     setLoading(true)
     setError(null)
     try {
+      const de = periodo === "custom" ? deCustom || undefined : calcularDataInicio(periodo)
+      const ate = periodo === "custom" ? ateCustom || undefined : undefined
       const res = await obterMetricasFunil({
-        de: calcularDataInicio(periodo),
+        de,
+        ate,
         origem: origem === "all" ? undefined : origem,
       })
-      setData(res)
+      if (reqId === reqIdRef.current) setData(res)
     } catch (e) {
-      setError((e as Error).message || "Não foi possível carregar as métricas do funil")
+      if (reqId === reqIdRef.current) {
+        setError((e as Error).message || "Não foi possível carregar as métricas do funil")
+      }
     } finally {
-      setLoading(false)
+      if (reqId === reqIdRef.current) setLoading(false)
     }
-  }, [periodo, origem])
+  }, [periodo, origem, deCustom, ateCustom])
 
   useEffect(() => {
-    refresh()
+    void refresh()
   }, [refresh])
 
   return { data, loading, error, refresh }

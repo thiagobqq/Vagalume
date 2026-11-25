@@ -7,4 +7,7 @@ export type UsuarioPermissoesDto = {
   nome: string
   email: string
   permissoes: string[]
+  solicitacaoPendente?: boolean
+  solicitacaoMensagem?: string | null
+  solicitacaoEm?: string | null
 }

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, ExternalLink, Loader2 } from "lucide-react"
+import { safeExternalUrl } from "@/lib/url"
 import type { PendenteVaga } from "@/hooks/use-aplicacao-pendente"
 
 /**
@@ -48,8 +49,10 @@ export function ConfirmarAplicacaoDialog({
     }
   }
 
+  const safeUrl = safeExternalUrl(pendente?.url)
+
   return (
-    <Dialog open={!!pendente} onOpenChange={(o) => { if (!o) onCancel() }}>
+    <Dialog open={!!pendente} onOpenChange={(o) => { if (!o && !confirmando) onCancel() }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -65,9 +68,9 @@ export function ConfirmarAplicacaoDialog({
             Abrimos a vaga em outra aba. Se você concluiu a candidatura lá, confirme para registrá-la
             em <span className="font-semibold text-foreground">Aplicado</span>.
           </p>
-          {pendente && (
+          {safeUrl && (
             <a
-              href={pendente.url}
+              href={safeUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs font-semibold underline underline-offset-4 hover:opacity-80"
