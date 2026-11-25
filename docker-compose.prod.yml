@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    stop_grace_period: 30s
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-vagalume}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}"
@@ -22,6 +23,7 @@ services:
       context: ./backend
       dockerfile: src/Vagalume.Api/Dockerfile
     restart: unless-stopped
+    stop_grace_period: 30s
     environment:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-vagalume};Username=${POSTGRES_USER:-vagalume};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}"
@@ -31,7 +33,8 @@ services:
       Seguranca__ChaveCripto: "${SEGURANCA_CHAVE_CRIPTO:?defina SEGURANCA_CHAVE_CRIPTO}"
       Authentication__Google__ClientId: "${AUTHENTICATION_GOOGLE_CLIENTID:-}"
       Ia__Presets__OllamaBaseUrl: "${IA_PRESETS_OLLAMA_BASE_URL:-}"
-      Busca__Agente__UrlPublica: "${Busca__Agente__UrlPublica:-}"
+      Busca__Agente__UrlPublica: "${BUSCA_AGENTE_URL_PUBLICA:-${Busca__Agente__UrlPublica:-}}"
+      Cors__AllowedOrigins: "${CORS_ALLOWED_ORIGINS:-}"
       Uploads__BasePath: "/app/uploads"
       OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
       OTEL_EXPORTER_OTLP_HEADERS: "${OTEL_EXPORTER_OTLP_HEADERS:-}"

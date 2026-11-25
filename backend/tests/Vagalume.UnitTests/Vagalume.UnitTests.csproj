@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\src\Vagalume.Domain\Vagalume.Domain.csproj" />
     <ProjectReference Include="..\..\src\Vagalume.Application\Vagalume.Application.csproj" />
     <ProjectReference Include="..\..\src\Vagalume.Infra\Vagalume.Infra.csproj" />
+    <ProjectReference Include="..\..\src\Vagalume.Api\Vagalume.Api.csproj" />
   </ItemGroup>
 
 </Project>
