@@ -43,6 +43,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
+      - dokploy-network
       - vagalume
 
   frontend:
@@ -50,7 +51,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # vazio => frontend usa /api relativo e nginx faz proxy para api:8080
         VITE_API_URL: "${VITE_API_URL:-}"
         VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"
     restart: unless-stopped
@@ -60,7 +60,6 @@ services:
       - vagalume
       - dokploy-network
     labels:
-      # garante que o Traefik use a dokploy-network para achar o IP do container
       - traefik.docker.network=dokploy-network
 
 volumes:
