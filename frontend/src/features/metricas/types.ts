@@ -44,6 +44,12 @@ export type CandidaturaFluxoDto = {
   atualizadoEm: string
 }
 
+export type InsightFunilDto = {
+  tipo: "positivo" | "atencao" | "info" | string
+  titulo: string
+  descricao: string
+}
+
 export type MetricasFunilDto = {
   totalCandidaturas: number
   aguardandoResposta: number
@@ -62,9 +68,10 @@ export type MetricasFunilDto = {
   transicoes: TransicaoHistoricoDto[]
   porOrigem: MetricasOrigemDto[]
   candidaturas: CandidaturaFluxoDto[]
+  insights?: InsightFunilDto[]
 }
 
-export type PeriodoFiltro = "all" | "30d" | "90d" | "180d" | "365d"
+export type PeriodoFiltro = "all" | "30d" | "90d" | "180d" | "365d" | "custom"
 
 export type SelecaoSankey =
   | { tipo: "fluxo"; origem: string; destino: string }

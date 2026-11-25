@@ -37,6 +37,12 @@ export type CandidaturaDto = {
   link: string | null
   origem: string // Origem enum string
   observacoes: string | null
+  descricaoVaga?: string | null
+  modalidade?: string | null
+  curriculoId?: string | null
+  faixaSalarial?: string | null
+  proximaEtapaEm?: string | null
+  motivoEncerramento?: string | null
   status: string // Status enum string
   criadoEm: string
   atualizadoEm: string
@@ -57,8 +63,12 @@ export type CandidaturaDetalhadaDto = CandidaturaDto & {
 export type CurriculoDto = {
   id: string
   nomeArquivoOriginal: string
+  rotulo?: string | null
   tamanhoBytes: number
   ativo: boolean
+  textoLegivel?: boolean | null
+  scoreAts?: number | null
+  analisadoAtsEm?: string | null
   criadoEm: string
 }
 
@@ -69,6 +79,11 @@ export type CriarCandidaturaRequest = {
   link?: string | null
   origem: string
   observacoes?: string | null
+  descricaoVaga?: string | null
+  modalidade?: string | null
+  curriculoId?: string | null
+  faixaSalarial?: string | null
+  proximaEtapaEm?: string | null
 }
 
 export type AtualizarCandidaturaRequest = {
@@ -77,6 +92,39 @@ export type AtualizarCandidaturaRequest = {
   link?: string | null
   origem?: string | null
   observacoes?: string | null
+  descricaoVaga?: string | null
+  modalidade?: string | null
+  curriculoId?: string | null
+  limparCurriculo?: boolean
+  faixaSalarial?: string | null
+  proximaEtapaEm?: string | null
+  limparProximaEtapa?: boolean
+  motivoEncerramento?: string | null
+}
+
+export type VagaExtraidaDto = {
+  empresa: string | null
+  cargo: string | null
+  origem: string
+  modalidade: string
+  localizacao: string | null
+  descricao: string | null
+  extracaoParcial: boolean
+}
+
+export type RascunhoFollowUpDto = {
+  assunto: string
+  mensagem: string
+  canalSugerido: string
+}
+
+export type PrepEntrevistaDto = {
+  resumo: string
+  perguntasTecnicas: string[]
+  perguntasComportamentais: string[]
+  pontosParaDestacar: string[]
+  perguntasParaEntrevistador: string[]
+  geradoEm: string
 }
 
 export type MudarStatusRequest = {
@@ -85,6 +133,13 @@ export type MudarStatusRequest = {
 }
 
 // Auth
-export type UsuarioDto = { id: string; nome: string; email: string; permissoes?: string[] }
+export type UsuarioDto = { id: string; nome: string; email: string; temSenha?: boolean; permissoes?: string[] }
+export type SolicitacaoVerificacaoDto = {
+  id: string
+  status: string
+  mensagem: string | null
+  criadoEm: string
+  resolvidoEm: string | null
+}
 export type AuthResponseDto = { accessToken: string; refreshToken: string; usuario: UsuarioDto }
 export type RefreshResponseDto = { accessToken: string; refreshToken: string }

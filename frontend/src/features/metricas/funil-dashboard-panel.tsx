@@ -8,12 +8,17 @@ import { SANKEY_NODE_META } from "@/features/metricas/sankey-meta"
 import type { CandidaturaFluxoDto, PeriodoFiltro, SelecaoSankey } from "@/features/metricas/types"
 import { useMetricasFunil } from "@/hooks/use-metricas-funil"
 import { ORIGEM_LABEL, ORIGEM_VALUES, STATUS_LABEL, type Origem, type Status } from "@/features/candidaturas/types"
+import { exportarCandidaturasCsv } from "@/features/candidaturas/api"
 import { STATUS_STYLE } from "@/features/candidaturas/status-style"
 import {
+  AlertTriangle,
   ArrowRight,
+  CheckCircle2,
   Clock,
+  Download,
   Filter,
   GitBranch,
+  Info,
   Kanban,
   RefreshCw,
   RotateCcw,
@@ -28,6 +33,7 @@ const PERIODO_LABELS: Record<PeriodoFiltro, string> = {
   "90d": "Últimos 90 dias",
   "180d": "Últimos 6 meses",
   "365d": "Último ano",
+  custom: "Personalizado",
 }
 
 function formatPct(value: number) {
@@ -91,10 +97,17 @@ type Props = {
 
 export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanban }: Props) {
   const [periodo, setPeriodo] = useState<PeriodoFiltro>("all")
+  const [dataDe, setDataDe] = useState<string>("")
+  const [dataAte, setDataAte] = useState<string>("")
   const [origem, setOrigem] = useState<string>("all")
   const [selecao, setSelecao] = useState<SelecaoSankey>(null)
+  const [exportingCsv, setExportingCsv] = useState(false)
+  const [exportErr, setExportErr] = useState<string | null>(null)
 
-  const { data, loading, error, refresh } = useMetricasFunil(periodo, origem)
+  const { data, loading, error, refresh } = useMetricasFunil(periodo, origem, {
+    de: dataDe || undefined,
+    ate: dataAte || undefined,
+  })
 
   useEffect(() => {
     if (syncVersion > 0) void refresh()
@@ -143,6 +156,18 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
     setOrigem(next)
   }
 
+  async function handleExportarCsv() {
+    setExportingCsv(true)
+    setExportErr(null)
+    try {
+      await exportarCandidaturasCsv()
+    } catch (e) {
+      setExportErr((e as Error).message || "Falha ao exportar CSV")
+    } finally {
+      setExportingCsv(false)
+    }
+  }
+
   return (
     <div className="space-y-6 pb-8">
       {/* Barra de filtros */}
@@ -160,6 +185,32 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
               ))}
             </SelectContent>
           </Select>
+
+          {periodo === "custom" && (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <input
+                type="date"
+                aria-label="Data inicial"
+                value={dataDe}
+                onChange={(e) => {
+                  setSelecao(null)
+                  setDataDe(e.target.value)
+                }}
+                className="h-9 rounded-lg border border-ink/70 bg-card px-2 text-xs shadow-hard-xs"
+              />
+              <span className="text-muted-foreground">até</span>
+              <input
+                type="date"
+                aria-label="Data final"
+                value={dataAte}
+                onChange={(e) => {
+                  setSelecao(null)
+                  setDataAte(e.target.value)
+                }}
+                className="h-9 rounded-lg border border-ink/70 bg-card px-2 text-xs shadow-hard-xs"
+              />
+            </div>
+          )}
 
           <Select value={origem} onValueChange={handleOrigemChange}>
             <SelectTrigger className="h-9 w-[170px] border-ink/70 bg-card text-xs shadow-hard-xs">
@@ -184,6 +235,8 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
               onClick={() => {
                 setSelecao(null)
                 setPeriodo("all")
+                setDataDe("")
+                setDataAte("")
                 setOrigem("all")
               }}
             >
@@ -192,15 +245,32 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
           )}
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={refresh}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          <RefreshCw className="h-4 w-4" /> atualizar métricas
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportarCsv}
+            disabled={exportingCsv}
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <Download className="h-4 w-4" /> {exportingCsv ? "exportando..." : "exportar CSV"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refresh}
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className="h-4 w-4" /> atualizar métricas
+          </Button>
+        </div>
       </div>
+
+      {exportErr && (
+        <div className="rounded-xl border-[1.5px] border-destructive/40 bg-destructive/5 px-4 py-2.5 text-xs text-destructive">
+          {exportErr}
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center justify-between gap-3 rounded-xl border-[1.5px] border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
@@ -246,6 +316,8 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
                   variant="outline"
                   onClick={() => {
                     setPeriodo("all")
+                    setDataDe("")
+                    setDataAte("")
                     setOrigem("all")
                   }}
                 >
@@ -261,6 +333,39 @@ export function FunilDashboardPanel({ syncVersion = 0, onOpenDetail, onGoToKanba
         </NotebookPanel>
       ) : data ? (
         <>
+          {/* Insights acionáveis */}
+          {data.insights && data.insights.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {data.insights.map((insight, idx) => {
+                const isPositivo = insight.tipo === "positivo"
+                const isAtencao = insight.tipo === "atencao"
+                const Icon = isPositivo ? CheckCircle2 : isAtencao ? AlertTriangle : Info
+                const toneClass = isPositivo
+                  ? "border-emerald-500/40 bg-emerald-500/5"
+                  : isAtencao
+                    ? "border-amber-500/45 bg-amber-500/5"
+                    : "border-sky-500/40 bg-sky-500/5"
+                const iconClass = isPositivo
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : isAtencao
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-sky-600 dark:text-sky-400"
+                return (
+                  <div
+                    key={`${insight.titulo}-${idx}`}
+                    className={`flex items-start gap-2.5 rounded-xl border-[1.5px] p-3.5 shadow-hard-xs ${toneClass}`}
+                  >
+                    <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${iconClass}`} />
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="text-xs font-extrabold tracking-tight">{insight.titulo}</div>
+                      <p className="text-xs leading-relaxed text-muted-foreground">{insight.descricao}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           {/* KPIs principais */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <NotebookCard headerColor="var(--st-applied)">

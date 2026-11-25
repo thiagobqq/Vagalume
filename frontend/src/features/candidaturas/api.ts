@@ -1,5 +1,15 @@
 import { apiFetch, apiJson } from "@/lib/api"
-import type { CandidaturaDto, CandidaturaDetalhadaDto, CriarCandidaturaRequest, AtualizarCandidaturaRequest, MudarStatusRequest } from "./types"
+import type {
+  AtualizarCandidaturaRequest,
+  CandidaturaDetalhadaDto,
+  CandidaturaDto,
+  CriarCandidaturaRequest,
+  MudarStatusRequest,
+  PrepEntrevistaDto,
+  RascunhoFollowUpDto,
+  VagaExtraidaDto,
+} from "./types"
+import type { AnaliseCompatibilidadeDto } from "@/features/vagas/types"
 
 export async function listarCandidaturas() {
   return apiJson<CandidaturaDto[]>("/api/candidaturas")
@@ -33,6 +43,56 @@ export async function mudarStatus(id: string, req: MudarStatusRequest) {
   })
 }
 
+export async function removerCandidatura(id: string) {
+  return apiJson<{ id: string }>(`/api/candidaturas/${id}`, {
+    method: "DELETE",
+  })
+}
+
+export async function extrairVagaPorLink(url: string) {
+  return apiJson<VagaExtraidaDto>("/api/candidaturas/extrair-link", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  })
+}
+
+export async function analisarCompatibilidadeCandidatura(id: string) {
+  return apiJson<AnaliseCompatibilidadeDto>(`/api/candidaturas/${id}/compatibilidade`, {
+    method: "POST",
+  })
+}
+
+export async function gerarFollowUpCandidatura(id: string) {
+  return apiJson<RascunhoFollowUpDto>(`/api/candidaturas/${id}/gerar-followup`, {
+    method: "POST",
+  })
+}
+
+export async function obterPrepEntrevista(id: string) {
+  return apiJson<PrepEntrevistaDto | null>(`/api/candidaturas/${id}/preparar-entrevista`)
+}
+
+export async function gerarPrepEntrevista(id: string) {
+  return apiJson<PrepEntrevistaDto>(`/api/candidaturas/${id}/preparar-entrevista`, {
+    method: "POST",
+  })
+}
+
+export async function exportarCandidaturasCsv() {
+  const res = await apiFetch("/api/candidaturas/exportar.csv", { rawResponse: true })
+  if (!res.ok) throw new Error(`Não foi possível exportar CSV (${res.status})`)
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `vagalume-candidaturas-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 // curriculos
 import type { CurriculoDto } from "./types"
 
@@ -40,12 +100,27 @@ export async function listarCurriculos() {
   return apiJson<CurriculoDto[]>("/api/curriculos")
 }
 
-export async function uploadCurriculo(file: File) {
+export async function uploadCurriculo(file: File, rotulo?: string) {
   const fd = new FormData()
   fd.append("arquivo", file)
+  if (rotulo?.trim()) fd.append("rotulo", rotulo.trim())
   return apiJson<CurriculoDto>("/api/curriculos", {
     method: "POST",
     body: fd,
+  })
+}
+
+export async function atualizarCurriculo(id: string, rotulo: string | null) {
+  return apiJson<CurriculoDto>(`/api/curriculos/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rotulo }),
+  })
+}
+
+export async function removerCurriculo(id: string) {
+  return apiJson<{ id: string }>(`/api/curriculos/${id}`, {
+    method: "DELETE",
   })
 }
 
