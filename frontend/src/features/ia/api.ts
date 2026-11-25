@@ -34,3 +34,9 @@ export function testarIa(req: TestarIaRequest) {
     body: JSON.stringify(req),
   })
 }
+
+export function removerConfiguracaoIa() {
+  return apiJson<null>("/api/ia/configuracao", {
+    method: "DELETE",
+  })
+}

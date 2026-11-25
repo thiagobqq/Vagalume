@@ -1,4 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") ?? ""
+const API_URL =
+  ((import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL)?.replace(/\/$/, "") ?? ""
+
+export const AUTH_CLEARED_EVENT = "vagalume:auth-cleared"
 
 // envelope do backend: GenericResponseData<T> { success, message, data }
 export type ApiEnvelope<T> = {
@@ -17,7 +20,7 @@ export class ApiError extends Error {
   }
 }
 
-function getTokens() {
+export function getTokens() {
   return {
     accessToken: localStorage.getItem("vagalume:accessToken"),
     refreshToken: localStorage.getItem("vagalume:refreshToken"),
@@ -33,6 +36,9 @@ export function clearTokens() {
   localStorage.removeItem("vagalume:accessToken")
   localStorage.removeItem("vagalume:refreshToken")
   localStorage.removeItem("vagalume:user")
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CLEARED_EVENT))
+  }
 }
 
 let refreshing: Promise<string | null> | null = null
@@ -48,19 +54,32 @@ async function doRefresh(): Promise<string | null> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
       })
-      const envelope = (await res.json()) as ApiEnvelope<{ accessToken: string; refreshToken: string }>
-      // backend usa camelCase: accessToken / refreshToken
-      const data = envelope.data as unknown as Record<string, string> | null
+
+      // Erro transitório do servidor (5xx) não deve destruir um refresh token válido
+      if (res.status >= 500) {
+        return null
+      }
+
+      let envelope: ApiEnvelope<{ accessToken: string; refreshToken: string }> | null = null
+      try {
+        envelope = (await res.json()) as ApiEnvelope<{ accessToken: string; refreshToken: string }>
+      } catch {
+        envelope = null
+      }
+
+      const data = envelope?.data as unknown as Record<string, string> | null
       const newAccess = data?.accessToken ?? (data as unknown as { AccessToken?: string })?.AccessToken
       const newRefresh = data?.refreshToken ?? (data as unknown as { RefreshToken?: string })?.RefreshToken
-      if (!res.ok || !envelope.success || !newAccess || !newRefresh) {
-        clearTokens()
+      if (!res.ok || !envelope?.success || !newAccess || !newRefresh) {
+        if (res.status === 401 || res.status === 400 || res.status === 403) {
+          clearTokens()
+        }
         return null
       }
       setTokens(newAccess, newRefresh)
       return newAccess
     } catch {
-      clearTokens()
+      // Falha de rede / offline temporário: preserva tokens para tentativa posterior
       return null
     } finally {
       refreshing = null
@@ -79,12 +98,6 @@ export async function apiFetch(path: string, opts: FetchOpts = {}) {
   if (auth) {
     const { accessToken } = getTokens()
     if (accessToken) finalHeaders["Authorization"] = `Bearer ${accessToken}`
-  }
-
-  // não forçar Content-Type para FormData
-  const isFormData = rest.body instanceof FormData
-  if (!isFormData && rest.body && !finalHeaders["Content-Type"]) {
-    // se body for string já serializado, assume json foi setado pelo chamador
   }
 
   let res = await fetch(url, { ...rest, headers: finalHeaders })
@@ -108,20 +121,18 @@ export async function apiJson<T>(path: string, opts: FetchOpts = {}): Promise<T>
   try {
     json = text ? (JSON.parse(text) as ApiEnvelope<T>) : null
   } catch {
-    // resposta não-json (ex: 413 html)
     throw new ApiError(res.status, text || res.statusText)
   }
-
-  // arquivo binário (File) nunca passa por aqui — caller usa rawResponse
 
   if (!res.ok || (json && json.success === false)) {
     const msg = json?.message || `Erro ${res.status}`
     throw new ApiError(res.status, msg)
   }
 
-  // backend serializa camelCase; mas garante fallback
-  // Data pode ser null para 200 com lista vazia? backend retorna data=[]
-  return (json?.data as T) ?? (json as unknown as T)
+  if (json && typeof json === "object" && "data" in json) {
+    return json.data as T
+  }
+  return json as unknown as T
 }
 
 // helper para extrair envelope sem throw (usado em login que trata 401 como erro de UX)

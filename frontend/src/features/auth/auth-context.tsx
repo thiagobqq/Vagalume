@@ -1,5 +1,5 @@
 import { createContext, useContext, useCallback, useEffect, useMemo, useState } from "react"
-import { apiEnvelope, clearTokens } from "@/lib/api"
+import { AUTH_CLEARED_EVENT, apiEnvelope, apiJson, clearTokens, getTokens } from "@/lib/api"
 import type { UsuarioDto, AuthResponseDto } from "@/features/candidaturas/types"
 
 type AuthState = {
@@ -9,7 +9,9 @@ type AuthState = {
   login: (email: string, senha: string) => Promise<void>
   register: (nome: string, email: string, senha: string) => Promise<void>
   loginWithGoogle: (idToken: string) => Promise<void>
-  logout: () => void
+  logout: (todasSessoes?: boolean) => void
+  updateProfile: (nome: string) => Promise<UsuarioDto>
+  changePassword: (senhaAtual: string | null, novaSenha: string) => Promise<void>
   isAuthenticated: boolean
   hasPermissao: (chave: string) => boolean
   refreshUser: () => Promise<void>
@@ -29,10 +31,9 @@ function loadUser(): UsuarioDto | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UsuarioDto | null>(() => loadUser())
   const [accessToken, setAccessToken] = useState<string | null>(() => localStorage.getItem("vagalume:accessToken"))
-  const [loading] = useState(false)
+  const [loading, setLoading] = useState<boolean>(() => !!localStorage.getItem("vagalume:accessToken"))
 
   const persist = useCallback((auth: AuthResponseDto) => {
-    // backend serializa camelCase: accessToken, refreshToken, usuario
     const raw = auth as unknown as Record<string, unknown>
     const at = (raw.accessToken as string) ?? (raw.AccessToken as string)
     const rt = (raw.refreshToken as string) ?? (raw.RefreshToken as string)
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (usu) localStorage.setItem("vagalume:user", JSON.stringify(usu))
     setAccessToken(at ?? null)
     setUser(usu ?? null)
+    setLoading(false)
   }, [])
 
   const login = useCallback(
@@ -71,7 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok || !envelope?.success) {
         throw new Error(envelope?.message || raw || "Falha no cadastro")
       }
-      // após registrar, faz login automático
       await login(email, senha)
     },
     [login]
@@ -93,38 +94,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [persist]
   )
 
-  const logout = useCallback(() => {
+  const logout = useCallback((todasSessoes = false) => {
+    const { refreshToken } = getTokens()
+    if (refreshToken || todasSessoes) {
+      void apiEnvelope("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken, todasSessoes }),
+        auth: todasSessoes,
+      }).catch(() => {
+        /* revogação best-effort */
+      })
+    }
     clearTokens()
     setUser(null)
     setAccessToken(null)
+    setLoading(false)
   }, [])
 
   const refreshUser = useCallback(async () => {
-    const { res, envelope } = await apiEnvelope<UsuarioDto>("/api/auth/me")
-    if (res.ok && envelope?.success && envelope.data) {
-      localStorage.setItem("vagalume:user", JSON.stringify(envelope.data))
-      setUser(envelope.data)
+    try {
+      const { res, envelope } = await apiEnvelope<UsuarioDto>("/api/auth/me")
+      if (res.ok && envelope?.success && envelope.data) {
+        localStorage.setItem("vagalume:user", JSON.stringify(envelope.data))
+        setUser(envelope.data)
+      } else if (res.status === 401) {
+        clearTokens()
+        setUser(null)
+        setAccessToken(null)
+      }
+    } finally {
+      setLoading(false)
     }
   }, [])
+
+  const updateProfile = useCallback(async (nome: string) => {
+    const updated = await apiJson<UsuarioDto>("/api/auth/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome }),
+    })
+    localStorage.setItem("vagalume:user", JSON.stringify(updated))
+    setUser(updated)
+    return updated
+  }, [])
+
+  const changePassword = useCallback(async (senhaAtual: string | null, novaSenha: string) => {
+    await apiJson<null>("/api/auth/alterar-senha", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ senhaAtual: senhaAtual || null, novaSenha }),
+    })
+    await refreshUser()
+  }, [refreshUser])
 
   const hasPermissao = useCallback(
     (chave: string) => !!user?.permissoes?.includes(chave),
     [user]
   )
 
-  // permissões mudam no servidor: recarrega o usuário quando há token
   useEffect(() => {
-    if (accessToken) void refreshUser()
+    if (accessToken) {
+      void refreshUser()
+    } else {
+      setLoading(false)
+    }
   }, [accessToken, refreshUser])
 
-  // se token mudou externamente (ex: refresh), refletir
   useEffect(() => {
-    const onStorage = () => {
+    const syncAuth = () => {
       setAccessToken(localStorage.getItem("vagalume:accessToken"))
       setUser(loadUser())
+      setLoading(false)
     }
-    window.addEventListener("storage", onStorage)
-    return () => window.removeEventListener("storage", onStorage)
+    window.addEventListener("storage", syncAuth)
+    window.addEventListener(AUTH_CLEARED_EVENT, syncAuth)
+    return () => {
+      window.removeEventListener("storage", syncAuth)
+      window.removeEventListener(AUTH_CLEARED_EVENT, syncAuth)
+    }
   }, [])
 
   const value = useMemo<AuthState>(
@@ -136,11 +184,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       register,
       loginWithGoogle,
       logout,
+      updateProfile,
+      changePassword,
       isAuthenticated: !!accessToken,
       hasPermissao,
       refreshUser,
     }),
-    [user, accessToken, loading, login, register, loginWithGoogle, logout, hasPermissao, refreshUser]
+    [user, accessToken, loading, login, register, loginWithGoogle, logout, updateProfile, changePassword, hasPermissao, refreshUser]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

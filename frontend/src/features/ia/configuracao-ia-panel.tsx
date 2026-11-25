@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, KeyRound, Loader2, ShieldAlert, XCircle } from "lucide-react"
-import { listarProvedoresIa, obterConfiguracaoIa, salvarConfiguracaoIa, testarIa } from "./api"
+import { CheckCircle2, KeyRound, Loader2, ShieldAlert, Trash2, XCircle } from "lucide-react"
+import { listarProvedoresIa, obterConfiguracaoIa, removerConfiguracaoIa, salvarConfiguracaoIa, testarIa } from "./api"
 import type { ConfiguracaoIaDto, ProvedorIaDto, TestarIaResponse } from "./types"
 
 export function ConfiguracaoIaPanel() {
@@ -21,6 +21,7 @@ export function ConfiguracaoIaPanel() {
 
   const [salvando, setSalvando] = useState(false)
   const [testando, setTestando] = useState(false)
+  const [removendo, setRemovendo] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [teste, setTeste] = useState<TestarIaResponse | null>(null)
 
@@ -58,9 +59,15 @@ export function ConfiguracaoIaPanel() {
     [provedores, provedor]
   )
 
+  const mesmoProvedorSalvo = !!config && config.provedor === provedor
+  const temChaveSalvaNesteProvedor = mesmoProvedorSalvo && config.temChave
+
   const trocarProvedor = (valor: string) => {
     setProvedor(valor)
     setTeste(null)
+    setErro(null)
+    setMsg(null)
+    setApiKey("")
     const preset = provedores.find((p) => p.valor === valor)
     if (preset?.modeloPadrao) setModelo(preset.modeloPadrao)
   }
@@ -71,8 +78,8 @@ export function ConfiguracaoIaPanel() {
       setErro("Informe o modelo do provedor")
       return
     }
-    if (!config?.temChave && !apiKey.trim() && provedorAtual?.requerChave) {
-      setErro("Informe a API key do provedor")
+    if (!temChaveSalvaNesteProvedor && !apiKey.trim() && provedorAtual?.requerChave) {
+      setErro("Informe a API key do provedor selecionado")
       return
     }
     setSalvando(true)
@@ -100,6 +107,10 @@ export function ConfiguracaoIaPanel() {
       setErro("Informe provedor e modelo para testar")
       return
     }
+    if (!temChaveSalvaNesteProvedor && !apiKey.trim() && provedorAtual?.requerChave) {
+      setErro("Informe a API key deste provedor para testar a conexão")
+      return
+    }
     setTestando(true)
     setErro(null)
     setTeste(null)
@@ -117,6 +128,25 @@ export function ConfiguracaoIaPanel() {
     }
   }
 
+  const remover = async () => {
+    if (!config) return
+    setRemovendo(true)
+    setErro(null)
+    setMsg(null)
+    setTeste(null)
+    try {
+      await removerConfiguracaoIa()
+      setConfig(null)
+      setApiKey("")
+      setAtivo(true)
+      setMsg("Configuração e API key removidas do servidor")
+    } catch (e) {
+      setErro((e as Error).message)
+    } finally {
+      setRemovendo(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="grid place-items-center gap-2 py-12 text-sm text-muted-foreground">
@@ -124,6 +154,22 @@ export function ConfiguracaoIaPanel() {
       </div>
     )
   }
+
+  const badgeVariant = !config
+    ? "outline"
+    : !config.ativo
+      ? "secondary"
+      : config.temChave || provedorAtual?.requerChave === false
+        ? "offer"
+        : "outline"
+
+  const badgeLabel = !config
+    ? "não configurado"
+    : !config.ativo
+      ? "pausada"
+      : config.temChave || provedorAtual?.requerChave === false
+        ? "configurado"
+        : "sem chave"
 
   return (
     <div className="space-y-5">
@@ -137,11 +183,7 @@ export function ConfiguracaoIaPanel() {
             <KeyRound className="h-4 w-4" /> Provedor de IA
           </span>
         }
-        badge={
-          <Badge variant={config?.temChave || provedorAtual?.requerChave === false ? "offer" : "outline"}>
-            {config ? (config.temChave ? "configurado" : "sem chave") : "não configurado"}
-          </Badge>
-        }
+        badge={<Badge variant={badgeVariant}>{badgeLabel}</Badge>}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1 text-xs font-medium">
@@ -200,7 +242,11 @@ export function ConfiguracaoIaPanel() {
               autoComplete="off"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={config?.temChave ? `salva: ${config.chaveMascarada} — deixe vazio para manter` : "cole sua API key"}
+              placeholder={
+                temChaveSalvaNesteProvedor
+                  ? `salva: ${config.chaveMascarada} — deixe vazio para manter`
+                  : "cole a API key deste provedor"
+              }
             />
           </label>
           <div className="flex items-end">
@@ -232,13 +278,30 @@ export function ConfiguracaoIaPanel() {
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={testar} disabled={testando || salvando} className="gap-1.5">
-            {testando && <Loader2 className="h-4 w-4 animate-spin" />} testar conexão
-          </Button>
-          <Button onClick={salvar} disabled={salvando || testando} className="gap-1.5">
-            {salvando && <Loader2 className="h-4 w-4 animate-spin" />} salvar
-          </Button>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          {config ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={remover}
+              disabled={removendo || salvando || testando}
+              className="gap-1.5 text-destructive hover:text-destructive"
+            >
+              {removendo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              remover chave
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={testar} disabled={testando || salvando || removendo} className="gap-1.5">
+              {testando && <Loader2 className="h-4 w-4 animate-spin" />} testar conexão
+            </Button>
+            <Button onClick={salvar} disabled={salvando || testando || removendo} className="gap-1.5">
+              {salvando && <Loader2 className="h-4 w-4 animate-spin" />} salvar
+            </Button>
+          </div>
         </div>
       </NotebookPanel>
 
