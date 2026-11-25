@@ -45,7 +45,7 @@ public class AnaliseAtsConfiguration : IEntityTypeConfiguration<AnaliseAts>
         builder.HasOne(x => x.Curriculo)
             .WithMany()
             .HasForeignKey(x => x.CurriculoId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => new { x.UsuarioId, x.CurriculoId }).IsUnique();
     }

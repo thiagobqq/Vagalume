@@ -22,6 +22,7 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
     public DbSet<ConfiguracaoIa> ConfiguracoesIa => Set<ConfiguracaoIa>();
     public DbSet<AnaliseCompatibilidade> AnalisesCompatibilidade => Set<AnaliseCompatibilidade>();
     public DbSet<AnaliseAts> AnalisesAts => Set<AnaliseAts>();
+    public DbSet<SolicitacaoVerificacao> SolicitacoesVerificacao => Set<SolicitacaoVerificacao>();
 
     /// <summary>Trava a execução dentro da transação que importa resultados no PostgreSQL.</summary>
     public Task<ExecucaoBusca> ObterExecucaoParaAtualizarAsync(Guid id, CancellationToken ct)

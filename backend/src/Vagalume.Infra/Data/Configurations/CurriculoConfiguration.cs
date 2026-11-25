@@ -14,12 +14,17 @@ public class CurriculoConfiguration : IEntityTypeConfiguration<Curriculo>
             .IsRequired()
             .HasMaxLength(260);
 
+        builder.Property(x => x.Rotulo)
+            .HasMaxLength(120);
+
         builder.Property(x => x.CaminhoArmazenado)
             .IsRequired()
             .HasMaxLength(500);
 
         builder.Property(x => x.TamanhoBytes).IsRequired();
         builder.Property(x => x.Ativo).IsRequired();
+        builder.Property(x => x.TextoExtraido);
+        builder.Property(x => x.TextoLegivel);
         builder.Property(x => x.CriadoEm).IsRequired();
 
         builder.HasOne(x => x.Usuario)
@@ -28,5 +33,9 @@ public class CurriculoConfiguration : IEntityTypeConfiguration<Curriculo>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.UsuarioId);
+        builder.HasIndex(x => x.UsuarioId)
+            .IsUnique()
+            .HasDatabaseName("IX_Curriculos_UsuarioId_Ativo")
+            .HasFilter("\"Ativo\" = true");
     }
 }

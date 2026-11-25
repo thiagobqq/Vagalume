@@ -34,7 +34,7 @@ public class VagaConfiguration : IEntityTypeConfiguration<Vaga>
         builder.HasOne(x => x.Candidatura)
             .WithMany()
             .HasForeignKey(x => x.CandidaturaId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(x => new { x.UsuarioId, x.UrlNormalizada }).IsUnique();
         builder.HasIndex(x => new { x.UsuarioId, x.HashDedup }).IsUnique();

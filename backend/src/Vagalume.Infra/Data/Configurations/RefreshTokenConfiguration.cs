@@ -14,6 +14,9 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
             .IsRequired()
             .HasMaxLength(500);
 
+        builder.Property(x => x.TokenHash)
+            .HasMaxLength(128);
+
         builder.Property(x => x.ExpiraEm).IsRequired();
         builder.Property(x => x.CriadoEm).IsRequired();
 
@@ -26,6 +29,8 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.Token).IsUnique();
+        builder.HasIndex(x => x.TokenHash).IsUnique();
         builder.HasIndex(x => x.UsuarioId);
+        builder.HasIndex(x => x.ExpiraEm);
     }
 }

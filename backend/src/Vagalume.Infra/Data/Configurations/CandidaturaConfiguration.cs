@@ -24,6 +24,19 @@ public class CandidaturaConfiguration : IEntityTypeConfiguration<Candidatura>
         builder.Property(x => x.Observacoes)
             .HasMaxLength(2000);
 
+        builder.Property(x => x.DescricaoVaga);
+        builder.Property(x => x.Modalidade)
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
+        builder.Property(x => x.FaixaSalarial)
+            .HasMaxLength(120);
+
+        builder.Property(x => x.MotivoEncerramento)
+            .HasMaxLength(120);
+
+        builder.Property(x => x.PrepEntrevistaJson);
+
         builder.Property(x => x.Origem)
             .IsRequired()
             .HasConversion<string>()
@@ -41,6 +54,11 @@ public class CandidaturaConfiguration : IEntityTypeConfiguration<Candidatura>
             .WithMany(u => u.Candidaturas)
             .HasForeignKey(x => x.UsuarioId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(x => x.Curriculo)
+            .WithMany()
+            .HasForeignKey(x => x.CurriculoId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(x => x.UsuarioId);
         builder.HasIndex(x => new { x.UsuarioId, x.CriadoEm });

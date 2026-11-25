@@ -360,14 +360,32 @@ namespace Vagalume.Infra.Data.Migrations
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("CurriculoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DescricaoVaga")
+                        .HasColumnType("text");
+
                     b.Property<string>("Empresa")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("FaixaSalarial")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
                     b.Property<string>("Link")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
+
+                    b.Property<string>("Modalidade")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("MotivoEncerramento")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
                     b.Property<string>("Observacoes")
                         .HasMaxLength(2000)
@@ -378,6 +396,12 @@ namespace Vagalume.Infra.Data.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<string>("PrepEntrevistaJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProximaEtapaEm")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -387,6 +411,8 @@ namespace Vagalume.Infra.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CurriculoId");
 
                     b.HasIndex("UsuarioId");
 
@@ -457,15 +483,28 @@ namespace Vagalume.Infra.Data.Migrations
                         .HasMaxLength(260)
                         .HasColumnType("character varying(260)");
 
+                    b.Property<string>("Rotulo")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
                     b.Property<long>("TamanhoBytes")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("TextoExtraido")
+                        .HasColumnType("text");
+
+                    b.Property<bool?>("TextoLegivel")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("UsuarioId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UsuarioId");
+                    b.HasIndex("UsuarioId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Curriculos_UsuarioId_Ativo")
+                        .HasFilter("\"Ativo\" = true");
 
                     b.ToTable("Curriculos");
                 });
@@ -754,17 +793,60 @@ namespace Vagalume.Infra.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("TokenHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<Guid>("UsuarioId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ExpiraEm");
+
                     b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("TokenHash")
                         .IsUnique();
 
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("Vagalume.Domain.Entities.SolicitacaoVerificacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Mensagem")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("ResolvidoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ResolvidoPorUsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "Status");
+
+                    b.ToTable("SolicitacoesVerificacao");
                 });
 
             modelBuilder.Entity("Vagalume.Domain.Entities.UsuarioPermissao", b =>
@@ -951,7 +1033,7 @@ namespace Vagalume.Infra.Data.Migrations
                     b.HasOne("Vagalume.Domain.Entities.Curriculo", "Curriculo")
                         .WithMany()
                         .HasForeignKey("CurriculoId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
@@ -970,7 +1052,7 @@ namespace Vagalume.Infra.Data.Migrations
                     b.HasOne("Vagalume.Domain.Entities.Curriculo", "Curriculo")
                         .WithMany()
                         .HasForeignKey("CurriculoId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
@@ -994,11 +1076,18 @@ namespace Vagalume.Infra.Data.Migrations
 
             modelBuilder.Entity("Vagalume.Domain.Entities.Candidatura", b =>
                 {
+                    b.HasOne("Vagalume.Domain.Entities.Curriculo", "Curriculo")
+                        .WithMany()
+                        .HasForeignKey("CurriculoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
                         .WithMany("Candidaturas")
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Curriculo");
 
                     b.Navigation("Usuario");
                 });
@@ -1091,6 +1180,17 @@ namespace Vagalume.Infra.Data.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("Vagalume.Domain.Entities.SolicitacaoVerificacao", b =>
+                {
+                    b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Vagalume.Domain.Entities.UsuarioPermissao", b =>
                 {
                     b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
@@ -1107,7 +1207,7 @@ namespace Vagalume.Infra.Data.Migrations
                     b.HasOne("Vagalume.Domain.Entities.Candidatura", "Candidatura")
                         .WithMany()
                         .HasForeignKey("CandidaturaId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Vagalume.Domain.Entities.AppUser", "Usuario")
                         .WithMany("Vagas")
